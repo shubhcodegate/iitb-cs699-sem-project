@@ -1,22 +1,25 @@
-# IITB CS699 Semester Project
+# Campus Pulse - IITB CS699 Semester Project
 
 Semester-long software project for **CS699: Software Lab** at the **Indian Institute of Technology Bombay**.
 
 ## Team
 
-- Shubham Kumar
-- [Member 2]
-- [Member 3]
+- Shubham Kumar [26M2111]
+- Banibrata Manna [26M2114]
+- Naresh M [26M2119]
 
 ## Project Overview
 
-> Add a short description of the project here.
+> To build a location-aware campus discovery platform that helps students find relevant academic, club, and community events around them by combining event information from multiple sources, filtering it by time and location, and presenting it through a personalized and accessible interface.
 
 ## Objectives
 
-- [Objective 1]
-- [Objective 2]
-- [Objective 3]
+- Build a unified platform for discovering campus events and opportunities.
+- Aggregate event information from emails, portals, and manual submissions.
+- Extract structured details such as time, venue, organizer, and audience.
+- Show nearby and relevant events on an interactive campus map and timeline.
+- Personalize results based on user location, time, and event visibility permissions.
+- Improve event awareness and participation across the campus community.
 
 ## Repository Structure
 
@@ -24,7 +27,12 @@ Semester-long software project for **CS699: Software Lab** at the **Indian Insti
 .
 ├── src/               # Source code
 ├── tests/             # Tests
-├── docs/              # Project documentation
+├── docs               # Project documentation
+│   ├── design
+│   ├── meetings
+│   ├── proposal
+│   │   └── PITCHDOC.md
+│   └── requirements
 ├── README.md          # Project overview, setup, usage, and documentation
 └── CONTRIBUTING.md    # Development workflow and contribution guidelines
 ```
