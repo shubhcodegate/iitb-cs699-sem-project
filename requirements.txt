@@ -1,1 +1,3 @@
-langchain-huggingface
+beautifulsoup4
+langchain-core
+langchain-groq

@@ -5,6 +5,11 @@
 
 ## Setup for HuggingFace Free API
 
-1. In you local repo create a file `requirements.txt` in repo root and put `langchain-huggingface` to it.
+1. In you local repo create a file `requirements.txt` in repo root and put 
+    ```
+    beautifulsoup4
+    langchain-core
+    langchain-groq
+    ```
 2. Run this command `pip install -r requirements.txt` in your virtual environment.
-3. To generate HUGGINGFACEHUB_API_TOKEN follow [Steps to generate HuggingFace API Token](./Steps-to-generate-HuggingFace-API-Token.md)
+3. To generate GROQ_API_KEY follow [Steps to generate Groq API Token](./Steps-to-generate-ChatGroq-API-Token.md)
