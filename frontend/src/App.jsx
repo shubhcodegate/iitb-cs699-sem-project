@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import CampusMap from './components/CampusMap'
 import { events } from './data/events'
 import './App.css'
 
@@ -26,6 +27,8 @@ function App() {
         <h1>Campus Pulse</h1>
         <p>Discover what’s happening around campus.</p>
       </header>
+
+      <CampusMap />
 
       <section aria-labelledby="events-heading">
         <h2 id="events-heading">Upcoming events</h2>
