@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { events } from './data/events'
 import './App.css'
 
@@ -11,7 +12,14 @@ function formatDate(date) {
   return dateFormatter.format(new Date(`${date}T00:00:00`))
 }
 
+const categories = [...new Set(events.map((event) => event.category))].sort()
+
 function App() {
+  const [selectedCategory, setSelectedCategory] = useState('')
+  const filteredEvents = events.filter(
+    (event) => selectedCategory === '' || event.category === selectedCategory,
+  )
+
   return (
     <main className="campus-page">
       <header className="page-header">
@@ -20,13 +28,34 @@ function App() {
       </header>
 
       <section aria-labelledby="events-heading">
-        <h2 id="events-heading">Upcoming events ({events.length})</h2>
+        <h2 id="events-heading">Upcoming events</h2>
         <p className="sample-notice">
           Sample events for demonstration. All times are in IST.
         </p>
 
+        <div className="event-filters">
+          <label htmlFor="category-filter">Category</label>
+          <select
+            id="category-filter"
+            value={selectedCategory}
+            onChange={(event) => setSelectedCategory(event.target.value)}
+          >
+            <option value="">All categories</option>
+            {categories.map((category) => (
+              <option key={category} value={category}>{category}</option>
+            ))}
+          </select>
+          <p role="status">
+            Showing {filteredEvents.length} of {events.length} events
+          </p>
+        </div>
+
+        {filteredEvents.length === 0 && (
+          <p>No events found. Try another category.</p>
+        )}
+
         <div className="event-grid">
-          {events.map((event) => (
+          {filteredEvents.map((event) => (
             <article className="event-card" key={event.id}>
               <span className="event-category">{event.category}</span>
 
