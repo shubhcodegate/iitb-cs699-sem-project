@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import CampusMap from './components/CampusMap'
 import { events } from './data/events'
+import { venues } from './data/venues'
 import './App.css'
 
 const dateFormatter = new Intl.DateTimeFormat('en-IN', {
@@ -17,6 +18,8 @@ const categories = [...new Set(events.map((event) => event.category))].sort()
 
 function App() {
   const [selectedCategory, setSelectedCategory] = useState('')
+  const [selectedVenue, setSelectedVenue] = useState(null)
+
   const filteredEvents = events.filter(
     (event) => selectedCategory === '' || event.category === selectedCategory,
   )
@@ -28,7 +31,7 @@ function App() {
         <p>Discover what’s happening around campus.</p>
       </header>
 
-      <CampusMap />
+      <CampusMap selectedVenue={selectedVenue} />
 
       <section aria-labelledby="events-heading">
         <h2 id="events-heading">Upcoming events</h2>
@@ -95,6 +98,14 @@ function App() {
                   <dd>{event.audience}</dd>
                 </div>
               </dl>
+              <button
+                className="show-on-map-button"
+                type="button"
+                disabled={!venues[event.venueId]}
+                onClick={() => setSelectedVenue(venues[event.venueId])}
+              >
+                Show on map
+              </button>
             </article>
           ))}
         </div>
