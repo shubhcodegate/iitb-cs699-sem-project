@@ -2,12 +2,14 @@ import { useEffect } from 'react'
 import {
   MapContainer,
   TileLayer,
-  CircleMarker,
+  Marker,
   Popup,
   useMap,
 } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import './CampusMap.css'
+
+import { venueIcon } from './map/marker'
 
 //? reference: https://react-leaflet.js.org/docs/start-setup/
 
@@ -46,24 +48,19 @@ function CampusMap({ selectedVenue }) {
   scrollWheelZoom={false}
 >
   <TileLayer
-    attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-    url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-    maxZoom={19}
-  />
+  url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
+  attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  maxZoom={20}
+/>
 
   {selectedVenue && (
-    <CircleMarker
-      center={[selectedVenue.latitude, selectedVenue.longitude]}
-      radius={10}
-      pathOptions={{
-        color: '#4338ca',
-        fillColor: '#6366f1',
-        fillOpacity: 0.9,
-      }}
-    >
-      <Popup>{selectedVenue.name}</Popup>
-    </CircleMarker>
-  )}
+      <Marker
+        position={[selectedVenue.latitude, selectedVenue.longitude]}
+        icon={venueIcon}
+      >
+        <Popup>{selectedVenue.name}</Popup>
+      </Marker>
+    )}
 
   <MapFocus venue={selectedVenue} />
 </MapContainer>
