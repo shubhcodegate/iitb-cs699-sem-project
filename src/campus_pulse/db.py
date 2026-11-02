@@ -10,6 +10,7 @@ SCHEMA_PATH = HERE / "schema.sql"
 def connect():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row      # rows behave like dicts: row["title"]
+    conn.execute("PRAGMA foreign_keys = ON")   # make SQLite enforce REFERENCES
     return conn
 
 
