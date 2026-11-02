@@ -1,3 +1,8 @@
+python-dotenv
 beautifulsoup4
 langchain-core
 langchain-groq
+sqlalchemy
+pymysql
+psycopg2
+mysql-connector-python
