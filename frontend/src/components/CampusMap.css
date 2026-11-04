@@ -1,0 +1,17 @@
+.campus-map-section {
+  margin-bottom: 40px;
+}
+
+.map-description {
+  margin: 8px 0 16px;
+  color: #64748b;
+  line-height: 1.6;
+}
+
+.campus-map {
+  height: clamp(320px, 55vh, 500px);
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 16px;
+  z-index: 0;
+}
