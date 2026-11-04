@@ -4,6 +4,9 @@ import { events } from './data/events'
 import { venues } from './data/venues'
 import './App.css'
 
+//icon reference : just unicode icons - no 3rd party library.
+
+
 const dateFormatter = new Intl.DateTimeFormat('en-IN', {
   day: 'numeric',
   month: 'short',
@@ -21,10 +24,15 @@ function App() {
   const contentRef = useRef(null)
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedVenue, setSelectedVenue] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
 
-  const filteredEvents = events.filter(
-    (event) => selectedCategory === '' || event.category === selectedCategory,
-  )
+  const searchTerms = searchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean)
+  const filteredEvents = events.filter((event) => {
+    const matchesCategory = !selectedCategory || event.category === selectedCategory
+    const searchableText = [event.title, event.description, event.organizer, event.venue]
+      .filter(Boolean).join(' ').toLowerCase()
+    return matchesCategory && searchTerms.every((term) => searchableText.includes(term))
+  })
 
   function changeView(view) {
     setActiveView(view)
@@ -86,7 +94,17 @@ function App() {
         </p>
 
         <div className="event-filters">
-          <label htmlFor="category-filter">Category</label>
+          <div className="event-search">
+            <label htmlFor="event-search">Search events</label>
+            <input
+              id="event-search"
+              type="search"
+              placeholder="Search titles, organizers, or venues"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+            />
+          </div>
+          {/* <label htmlFor="category-filter">Category</label> */}
           <select
             id="category-filter"
             value={selectedCategory}
@@ -97,13 +115,19 @@ function App() {
               <option key={category} value={category}>{category}</option>
             ))}
           </select>
+          {(searchQuery || selectedCategory) && (
+            <button className="clear-filters-button" type="button" onClick={() => {
+              setSearchQuery('')
+              setSelectedCategory('')
+            }}>Clear filters</button>
+          )}
           <p role="status">
             Showing {filteredEvents.length} of {events.length} events
           </p>
         </div>
 
         {filteredEvents.length === 0 && (
-          <p>No events found. Try another category.</p>
+          <p className="search-empty-state">No events found. Try a different search or category, or clear your filters.</p>
         )}
 
         <div className="event-grid">
