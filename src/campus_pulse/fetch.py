@@ -99,6 +99,15 @@ def get_body(msg: email.message.EmailMessage) -> tuple[str, list[str]]:
         texts.append(content.strip())
     return "\n\n".join(t for t in texts if t), links
 
+def safe_date(value):
+    try:
+        d = parsedate_to_datetime(value) if value else None
+    except (ValueError, TypeError):
+        return None
+    if d is not None and d.tzinfo is None:
+        d = d.replace(tzinfo=timezone.utc)
+    return d
+
 def parse_email(uid: int, raw_bytes: bytes, folder: str) -> dict:
     """Turn raw email bytes into a dictionary."""
     msg = email.message_from_bytes(raw_bytes, policy=policy.default)   # unfolds headers
@@ -109,7 +118,7 @@ def parse_email(uid: int, raw_bytes: bytes, folder: str) -> dict:
         "imap_uid":    uid,
         "imap_folder": folder,
         "subject":     str(msg["Subject"] or ""),
-        "date":        parsedate_to_datetime(msg["Date"]) if msg["Date"] else None,
+        "date":        safe_date(msg["Date"]),
         "sender":      str(msg["From"] or ""),
         "recipients":  [addr.lower() for _, addr in getaddresses(to_and_cc) if addr],
         "body":        b,
