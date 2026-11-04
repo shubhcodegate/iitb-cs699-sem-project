@@ -1,6 +1,7 @@
-"""This Unit test file is generated with AI help"""
+"""Tests for campus_pulse.fetch. Run with: python -m unittest discover tests
 
-"""Tests for campus_pulse.fetch. Run with: python -m unittest discover tests"""
+This unit test file was generated with AI help.
+"""
 import sys
 import unittest
 from datetime import timedelta, timezone
