@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import CampusMap from './components/CampusMap'
 import { events } from './data/events'
 import { venues } from './data/venues'
@@ -17,6 +17,8 @@ function formatDate(date) {
 const categories = [...new Set(events.map((event) => event.category))].sort()
 
 function App() {
+  const [activeView, setActiveView] = useState('dashboard')
+  const contentRef = useRef(null)
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedVenue, setSelectedVenue] = useState(null)
 
@@ -24,15 +26,59 @@ function App() {
     (event) => selectedCategory === '' || event.category === selectedCategory,
   )
 
+  function changeView(view) {
+    setActiveView(view)
+    contentRef.current?.focus()
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  }
+
+  function showVenue(venue) {
+    setSelectedVenue(venue)
+    changeView('map')
+  }
+
   return (
-    <main className="campus-page">
+    <div className="app-shell">
+      <aside className="sidebar">
+        <a className="sidebar-brand" href="#dashboard" onClick={() => changeView('dashboard')}>
+          <span className="brand-mark" aria-hidden="true">CP</span>
+          <span>Campus Pulse<small>IIT BOMBAY</small></span>
+        </a>
+        <p className="nav-label">EXPLORE</p>
+        <nav className="view-navigation" aria-label="Main navigation">
+          <button type="button" aria-current={activeView === 'dashboard' ? 'page' : undefined} onClick={() => changeView('dashboard')}><span aria-hidden="true">▦</span> Dashboard</button>
+          <button type="button" aria-current={activeView === 'map' ? 'page' : undefined} onClick={() => changeView('map')}><span aria-hidden="true">⌖</span> Campus map</button>
+        </nav>
+        <div className="sidebar-note">A little closer to campus.<span>Discover events, find your way,<br />and get involved.</span></div>
+      </aside>
+      <main className="campus-page" ref={contentRef} tabIndex={-1}>
+      <div className="workspace-bar"><span>Campus / {activeView === 'dashboard' ? 'Dashboard' : 'Map'}</span><span>IIT Bombay, Powai</span></div>
       <header className="page-header">
-        <h1>Campus Pulse</h1>
-        <p>Discover what’s happening around campus.</p>
+        <h1>{activeView === 'dashboard' ? 'Your campus, at a glance' : 'Find your way around'}</h1>
+        <p>{activeView === 'dashboard' ? 'Discover events and make a little more of your campus day.' : 'Explore campus venues and locate your next event.'}</p>
       </header>
 
-      <CampusMap selectedVenue={selectedVenue} />
-
+      {activeView === 'map' ? (
+        <div className="map-layout">
+          <CampusMap selectedVenue={selectedVenue} />
+          <aside className="venue-panel" aria-labelledby="venues-heading">
+            <h2 id="venues-heading">Campus venues</h2>
+            <p>Select a venue to locate it on the map.</p>
+            <div className="venue-list">{Object.entries(venues).map(([id, venue]) => (
+              <button type="button" key={id} aria-pressed={selectedVenue === venue} onClick={() => setSelectedVenue(venue)}>
+                <span>{venue.name}</span><span aria-hidden="true">↗</span>
+              </button>
+            ))}</div>
+            {selectedVenue && <p className="selected-venue" role="status">Viewing {selectedVenue.name}</p>}
+          </aside>
+        </div>
+      ) : (
+      <>
+      <div className="dashboard-summary" aria-label="Event overview">
+        <div><span>Events to explore</span><strong>{events.length}</strong><small>In the sample programme</small></div>
+        <div><span>Across your interests</span><strong>{categories.length}</strong><small>Event categories</small></div>
+        <div className="summary-map"><span>Know where to go</span><p>Get familiar with campus.</p><button type="button" onClick={() => changeView('map')}>Open campus map <span aria-hidden="true">↗</span></button></div>
+      </div>
       <section aria-labelledby="events-heading">
         <h2 id="events-heading">Upcoming events</h2>
         <p className="sample-notice">
@@ -102,7 +148,7 @@ function App() {
                 className="show-on-map-button"
                 type="button"
                 disabled={!venues[event.venueId]}
-                onClick={() => setSelectedVenue(venues[event.venueId])}
+                onClick={() => showVenue(venues[event.venueId])}
               >
                 Show on map
               </button>
@@ -110,7 +156,10 @@ function App() {
           ))}
         </div>
       </section>
+      </>
+      )}
     </main>
+    </div>
   )
 }
 

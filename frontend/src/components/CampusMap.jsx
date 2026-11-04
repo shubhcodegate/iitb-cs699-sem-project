@@ -25,7 +25,7 @@ function MapFocus({ venue }) {
     map.flyTo(
       [venue.latitude, venue.longitude],
       18,
-      { duration: 1 },
+      { duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1 },
     )
   }, [map, venue])
 
@@ -39,7 +39,7 @@ function CampusMap({ selectedVenue }) {
       <h2 id="map-heading">Explore campus</h2>
       <p className="map-description">
         Drag to explore IIT Bombay and use the + and − buttons to zoom.
-        Event locations will appear here once venues are added.
+        Select a campus venue or use “Show on map” from the dashboard.
       </p>
       <MapContainer
   className="campus-map"
@@ -49,7 +49,7 @@ function CampusMap({ selectedVenue }) {
 >
   <TileLayer
   url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-  attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
   maxZoom={20}
 />
 
