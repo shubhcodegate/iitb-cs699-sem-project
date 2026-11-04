@@ -6,6 +6,8 @@ import sys
 import unittest
 from datetime import timedelta, timezone
 from pathlib import Path
+import io
+from contextlib import redirect_stdout
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
@@ -151,8 +153,11 @@ class TestFetchNewEmails(unittest.TestCase):
 
     def test_bad_message_skipped(self):
         self.mail.messages[5] = None    # parse_email will raise on this
-        _, emails = fetch_new_emails(self.mail)
+        out = io.StringIO()
+        with redirect_stdout(out):
+            _, emails = fetch_new_emails(self.mail)
         self.assertEqual([e["imap_uid"] for e in emails], [3, 9])
+        self.assertIn("UID 5", out.getvalue())
 
 
 if __name__ == "__main__":
