@@ -72,11 +72,16 @@ def html_to_text(html: str) -> str:
     
     return re.sub(r"\n\s*\n+", "\n\n", text).strip()    # collapse blank lines
 
+def get_links(html: str) -> list[str]:
+    soup = BeautifulSoup(html, "html.parser")
+    return [a["href"] for a in soup.find_all("a", href=True) if a["href"].startswith("http")]
 
-def get_body(msg: email.message.EmailMessage) -> str:
+
+def get_body(msg: email.message.EmailMessage) -> tuple[str, list[str]]:
     """Return all of the email's text, joined together."""
 
     texts = []
+    links = []
     for part in get_text_from_part(msg):
         try:
             content = part.get_content()
@@ -88,15 +93,17 @@ def get_body(msg: email.message.EmailMessage) -> str:
                 content = payload.decode("utf-8", errors="replace")
     
         if part.get_content_type() == "text/html":
+            links.extend(get_links(content))   # needs the raw HTML
             content = html_to_text(content)
         
         texts.append(content.strip())
-    return "\n\n".join(t for t in texts if t)
+    return "\n\n".join(t for t in texts if t), links
 
 def parse_email(uid: int, raw_bytes: bytes, folder: str) -> dict:
     """Turn raw email bytes into a dictionary."""
     msg = email.message_from_bytes(raw_bytes, policy=policy.default)   # unfolds headers
     to_and_cc = msg.get_all("To", []) + msg.get_all("Cc", [])
+    b, l = get_body(msg)
     return {
         "message_id":  email_key(msg),
         "imap_uid":    uid,
@@ -105,7 +112,8 @@ def parse_email(uid: int, raw_bytes: bytes, folder: str) -> dict:
         "date":        parsedate_to_datetime(msg["Date"]) if msg["Date"] else None,
         "sender":      str(msg["From"] or ""),
         "recipients":  [addr.lower() for _, addr in getaddresses(to_and_cc) if addr],
-        "body":        get_body(msg),
+        "body":        b,
+        "links":       l,
     }
 
 
@@ -130,7 +138,7 @@ def fetch_new_emails(mail: imaplib.IMAP4_SSL, folder="INBOX", since_uid=0, limit
             _, msg_data = mail.uid("fetch", str(uid), "(BODY.PEEK[])") # PEEK: don't mark as read
             emails.append(parse_email(uid, msg_data[0][1], folder))
         except Exception as e:
-            print(f"Skipping UID {uid}: {e}")
+            print(f"fetch_new_emails: Error occurred while fetching UID {uid}: {e}")
 
     return uidvalidity, emails
 
@@ -144,4 +152,4 @@ if __name__ == "__main__":
 
     print(f"UIDVALIDITY: {uidvalidity}")
     for e in emails:
-        print(e["imap_uid"], "|", e["subject"][:70], "|", len(e["recipients"]), "recipients")
+        print(e["imap_uid"], "|", e["subject"][:70], "|", len(e["recipients"]), "recipients", e["links"])
