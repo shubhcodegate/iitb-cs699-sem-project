@@ -241,7 +241,7 @@ export const venues = {
         latitude: 19.1360132,
         longitude: 72.9081875
     },
-    'Department of Energy Science and Engineering': {
+    'Department of Energy Science and Engineering': {          
         name : 'Department of Energy Science and Engineering', 
         latitude: 19.1305147,
         longitude: 72.9170163
@@ -271,9 +271,109 @@ export const venues = {
         latitude: 19.1309968,
         longitude: 72.9174496
     },
-    'IEOR': {
+    'Department of IEOR': {
         name : 'IEOR', 
         latitude: 19.1309539,
         longitude: 72.9178727
+    },
+    'Department of Economics': {
+        name : 'Department of Economics', 
+        latitude: 19.1313928,
+        longitude: 72.9181152
+    },
+    'Department of Metallurgical Engineering & Materials Science': {
+        name : 'MEMS', 
+        latitude: 19.1311984,
+        longitude: 72.9163181
+    },
+    'SOM Building': {
+        name : 'SJMSOM', 
+        latitude: 19.1316528,
+        longitude: 72.9156606
+    },
+    'Department of Electrical Engineering': {
+        name : 'EE', 
+        latitude: 19.1318499,
+        longitude: 72.9158924
+    },
+    'GG Building': {
+        name : 'GG', 
+        latitude: 19.1316581,
+        longitude: 72.9163941
+    },
+    'Cafe 92': {
+        name : 'Cafe 92', 
+        latitude: 19.131877,
+        longitude: 72.9159978
+    },
+    'Department of Earth Sciences': {                    
+        name : 'Department of Earth Sciences', 
+        latitude: 19.1317572,
+        longitude: 72.9172468
+    },
+    'Nanofabrication Facility': {
+        name : 'Nanofabrication Facility', 
+        latitude: 19.1317547,
+        longitude: 72.9173274
+    },
+    'Centre of Studies In Resources Engineering': {
+        name : 'CSRE', 
+        latitude: 19.1318781,
+        longitude: 72.9173671
+    },
+    'Victor Menezes Convention Centre': {         
+        name : 'VMCC', 
+        latitude: 19.1327049,
+        longitude: 72.9172493,
+    },
+    'Rahul Bajaj Technology Innovation Centre': {             
+        name : 'RBTIC', 
+        latitude: 19.1327831,
+        longitude: 72.9173627
+    },
+    'MONASH Research Academy': {
+        name : 'MONASH Research Academy', 
+        latitude: 19.1328171,
+        longitude: 72.9176513
+    },
+    'Centre for Urban Science and Engineering': {
+        name : 'Centre for Urban Science and Engineering', 
+        latitude: 19.1322941,
+        longitude: 72.917224
+    },
+    'IDC School of Design': {
+        name : 'IDC School of Design', 
+        latitude: 19.1333264,
+        longitude: 72.9170369
+    },
+    'Department of Mechanical Engineering': {
+        name : 'Department of Mechanical Engineering', 
+        latitude: 19.133408,
+        longitude: 72.9159472
+    },
+    'Department of Civil Engineering': {          
+        name : 'Department of Civil Engineering', 
+        latitude: 19.1326138,
+        longitude: 72.9148423
+    },
+    'P C Saxena Auditorium': {
+        name : 'LTPCSA', 
+        latitude: 19.1324741,
+        longitude: 72.9155569,
+    },
+    'Nandan Nilekani Main Building': {
+        name : 'Nandan Nilekani Main Building', 
+        latitude: 19.1326893,
+        longitude: 72.9152917,
+    },
+    'DSSE': {
+        name : 'DSSE', 
+        latitude: 19.1340716,
+        longitude: 72.9138672
+    },
+    'Central Library': {
+        name : 'Central Library', 
+        latitude: 19.1341192,
+        longitude: 72.9147732
     },
 }
