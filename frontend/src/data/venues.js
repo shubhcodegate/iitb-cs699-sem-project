@@ -276,6 +276,11 @@ export const venues = {
         latitude: 19.1309539,
         longitude: 72.9178727
     },
+    'Department of Biosciences and Bioengineering': {
+        name : 'BSBE', 
+        latitude: 19.1308771,
+        longitude: 72.9178186
+    },
     'Department of Economics': {
         name : 'Department of Economics', 
         latitude: 19.1313928,
@@ -375,5 +380,35 @@ export const venues = {
         name : 'Central Library', 
         latitude: 19.1341192,
         longitude: 72.9147732
+    },
+    'Department of Mathematics': {
+        name : 'Department of Mathematics', 
+        latitude: 19.1338833,
+        longitude: 72.915149
+    },
+    'Ashank Desai Centre for Policy Studies': {                  
+        name : 'Ashank Desai Centre for Policy Studies', 
+        latitude: 19.1341807,
+        longitude: 72.9160076
+    },
+    'Department of Mathematics': {
+        name : 'Department of Mathematics', 
+        latitude: 19.1338833,
+        longitude: 72.915149
+    },
+    'C-TARA': {
+        name : 'C-TARA', 
+        latitude: 19.1342215,
+        longitude: 72.9160336,
+    },
+    'Centre For Distance Engineering Education Programme': {
+        name : 'CDEEP', 
+        latitude: 19.1341263,
+        longitude: 72.9155872
+    },
+    'Centre for Systems and Control': {
+        name : 'Centre for Systems and Control', 
+        latitude: 19.1346267,
+        longitude: 72.9153934
     },
 }
