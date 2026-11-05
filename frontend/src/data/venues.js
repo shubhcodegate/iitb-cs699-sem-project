@@ -6,10 +6,25 @@ export const venues = {
         latitude: 19.1304498,
         longitude: 72.9153911
     },
+    'Department of Computer Science & Engineering': {
+        name : 'CSE',
+        latitude: 19.1304709,
+        longitude: 72.9158402
+    }, 
+    'Centre for Machine Intelligence and Data Science': {
+        name : 'CMINDS',
+        latitude: 19.1305584,
+        longitude: 72.9158519,
+    }, 
+    'Koita Centre for Digital Health': {
+        name : 'KCDH',
+        latitude: 19.1304709,
+        longitude: 72.9158402
+    }, 
     'kresit-building': {
         name : 'Kresit Building',
-        latitude: 19.1305546,
-        longitude: 72.9161875
+        latitude: 19.1305584,
+        longitude: 72.9158519
     }, 
     'lec-hall-complex': {
         name : 'Lecture Hall Complex', 
@@ -31,16 +46,16 @@ export const venues = {
         latitude: 19.129662,    
         longitude: 72.9143107
     },
-    // 'padma-vihar-guest-house': {
-    //     name : 'Padma Vihar Guest House', 
-    //     latitude: 19.129662,72.9143107
-    //     longitude: 
-    // },
-    // 'van-vihar-guest-house': {
-    //     name : 'Van Vihar Guest House', 
-    //     latitude: 19.129662,72.9143107
-    //     longitude: 
-    // },
+    'padma-vihar-guest-house': {
+        name : 'Padma Vihar Guest House', 
+        latitude: 19.1296563,
+        longitude: 72.913957
+    },
+    'van-vihar-guest-house': {
+        name : 'Van Vihar Guest House', 
+        latitude: 19.1296737,
+        longitude: 72.9147061
+    },
     'gulmohar-restaurant': {
         name : 'Gulmohar Restaurant', 
         latitude: 19.1295911,
@@ -241,6 +256,11 @@ export const venues = {
         latitude: 19.1360132,
         longitude: 72.9081875
     },
+    'Department of Environmental Science and Engineering': {          
+        name : 'Department of Environmental Science and Engineering', 
+        latitude: 19.1301248,
+        longitude: 72.9181933
+    },
     'Department of Energy Science and Engineering': {          
         name : 'Department of Energy Science and Engineering', 
         latitude: 19.1305147,
@@ -266,12 +286,17 @@ export const venues = {
         latitude: 19.1309598,
         longitude: 72.9181989
     },
+    'Department of Humanities and Social Sciences': {
+        name : 'Department of Humanities and Social Sciences', 
+        latitude: 19.1312074,
+        longitude: 72.9173636
+    },
     'Aerospace Engineering Labs': {
         name : 'Aerospace Engineering Labs', 
         latitude: 19.1309968,
         longitude: 72.9174496
     },
-    'Department of IEOR': {
+    'Department of Industrial Engineering and Operations Research': {
         name : 'IEOR', 
         latitude: 19.1309539,
         longitude: 72.9178727
@@ -387,7 +412,7 @@ export const venues = {
         longitude: 72.915149
     },
     'Ashank Desai Centre for Policy Studies': {                  
-        name : 'Ashank Desai Centre for Policy Studies', 
+        name : 'ADCPS', 
         latitude: 19.1341807,
         longitude: 72.9160076
     },
@@ -396,7 +421,7 @@ export const venues = {
         latitude: 19.1338833,
         longitude: 72.915149
     },
-    'C-TARA': {
+    'Centre for Technology Alternatives for Rural Areas': {
         name : 'C-TARA', 
         latitude: 19.1342215,
         longitude: 72.9160336,
