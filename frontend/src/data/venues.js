@@ -436,4 +436,29 @@ export const venues = {
         latitude: 19.1346267,
         longitude: 72.9153934
     },
+    'Children Park': {
+        name : 'Children Park', 
+        latitude: 19.1266345,
+        longitude: 72.9147397
+    },
+    'SAROVAR UDYAN': {
+        name : 'SAROVAR UDYAN', 
+        latitude: 19.125823,
+        longitude: 72.9144533
+    },
+    'Main Gate': {
+        name : 'Main Gate', 
+        latitude: 19.1257486,
+        longitude: 72.9160469
+    },
+    'Community Hall': {
+        name : 'Community Hall', 
+        latitude: 19.1247103,
+        longitude: 72.911812
+    },
+    'Shri Sridevi Padmavati Devi Temple': {
+        name : 'Shri Sridevi Padmavati Devi Temple', 
+        latitude: 19.1262478,
+        longitude: 72.908923
+    },
 }
