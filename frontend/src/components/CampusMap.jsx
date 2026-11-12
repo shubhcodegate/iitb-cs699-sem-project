@@ -1,37 +1,21 @@
 import { useEffect } from 'react'
-import {
-  MapContainer,
-  TileLayer,
-  Marker,
-  Popup,
-  useMap,
-} from 'react-leaflet'
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import './CampusMap.css'
-
 import { venueIcon } from './map/marker'
 
-//? reference: https://react-leaflet.js.org/docs/start-setup/
-
-const CAMPUS_CENTER = [19.1334, 72.9133] //? sourced from https://www.latlong.net/
-
+const CAMPUS_CENTER = [19.1334, 72.9133]
 
 function MapFocus({ venue }) {
   const map = useMap()
 
   useEffect(() => {
     if (!venue) return
-
-    map.flyTo(
-      [venue.latitude, venue.longitude],
-      18,
-      { duration: 1 },
-    )
+    map.flyTo([venue.latitude, venue.longitude], 17, { duration: 1 })
   }, [map, venue])
 
   return null
 }
-
 
 function CampusMap({ selectedVenue }) {
   return (
@@ -41,29 +25,22 @@ function CampusMap({ selectedVenue }) {
         Drag to explore IIT Bombay and use the + and − buttons to zoom.
         Event locations will appear here once venues are added.
       </p>
-      <MapContainer
-  className="campus-map"
-  center={CAMPUS_CENTER}
-  zoom={16}
-  scrollWheelZoom={false}
->
-  <TileLayer
-  url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
-  attribution='&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; <a href="https://openmaptiles.org/">OpenMapTiles</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-  maxZoom={20}
-/>
 
-  {selectedVenue && (
-      <Marker
-        position={[selectedVenue.latitude, selectedVenue.longitude]}
-        icon={venueIcon}
-      >
-        <Popup>{selectedVenue.name}</Popup>
-      </Marker>
-    )}
+      <MapContainer className="campus-map" center={CAMPUS_CENTER} zoom={16} scrollWheelZoom={false}>
+        <TileLayer
+          url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
+          attribution='Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+          maxZoom={17}
+        />
 
-  <MapFocus venue={selectedVenue} />
-</MapContainer>
+        {selectedVenue && (
+          <Marker position={[selectedVenue.latitude, selectedVenue.longitude]} icon={venueIcon}>
+            <Popup>{selectedVenue.name}</Popup>
+          </Marker>
+        )}
+
+        <MapFocus venue={selectedVenue} />
+      </MapContainer>
     </section>
   )
 }
