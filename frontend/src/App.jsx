@@ -1,9 +1,10 @@
-import { useRef, useState } from 'react'
+import { useActionState, useRef, useState } from 'react'
 import CampusMap from './components/CampusMap'
 import { events } from './data/events'
 import { venues } from './data/venues'
 import './App.css'
-
+import { GoogleLogin } from '@react-oauth/google'
+import { jwtDecode } from "jwt-decode"
 //icon reference : just unicode icons - no 3rd party library.
 
 
@@ -17,6 +18,8 @@ function formatDate(date) {
   return dateFormatter.format(new Date(`${date}T00:00:00`))
 }
 
+
+
 const categories = [...new Set(events.map((event) => event.category))].sort()
 
 function App() {
@@ -25,6 +28,9 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedVenue, setSelectedVenue] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [credentials, setCredentials] = useState('')
+  const [user, setUser] = useState({});
 
   const searchTerms = searchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean)
   const filteredEvents = events.filter((event) => {
@@ -45,6 +51,14 @@ function App() {
     changeView('map')
   }
 
+  function handleSuccess(credentialResponse) {
+    console.log(credentialResponse)
+    setIsAuthenticated(true)
+    setCredentials(credentialResponse.credential)
+    setUser((olduser) => jwtDecode(credentialResponse.credential))
+    console.log(jwtDecode(credentialResponse.credential))
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -60,7 +74,41 @@ function App() {
         <div className="sidebar-note">A little closer to campus.<span>Discover events, find your way,<br />and get involved.</span></div>
       </aside>
       <main className="campus-page" ref={contentRef} tabIndex={-1}>
-      <div className="workspace-bar"><span>Campus / {activeView === 'dashboard' ? 'Dashboard' : 'Map'}</span><span>IIT Bombay, Powai</span></div>
+      <div className="workspace-bar"><span>Campus / {activeView === 'dashboard' ? 'Dashboard' : 'Map'}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+  {isAuthenticated ? (
+    <>
+      <span
+        style={{
+          fontSize: '16px',
+          fontWeight: 600,
+          lineHeight: 1.4,
+          color: '#263e56',
+        }}
+      >
+        Hi, {user.given_name}
+      </span>
+
+      <img
+        src={user.picture}
+        alt={`${user.given_name}'s profile`}
+        width={45}
+        height={45}
+        style={{
+          borderRadius: '50%',
+          objectFit: 'cover',
+          flexShrink: 0,
+        }}
+      />
+    </>
+  ) : (
+    <GoogleLogin
+      onSuccess={handleSuccess}
+      onError={() => console.log('authentication error')}
+    />
+  )}
+</div>
+      </div>
       <header className="page-header">
         <h1>{activeView === 'dashboard' ? 'Your campus, at a glance' : 'Find your way around'}</h1>
         <p>{activeView === 'dashboard' ? 'Discover events and make a little more of your campus day.' : 'Explore campus venues and locate your next event.'}</p>
