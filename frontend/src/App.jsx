@@ -3,7 +3,7 @@ import CampusMap from './components/CampusMap'
 import { events } from './data/events'
 import { venues } from './data/venues'
 import './App.css'
-import { GoogleLogin } from '@react-oauth/google'
+import { GoogleLogin, googleLogout } from '@react-oauth/google'
 import { jwtDecode } from "jwt-decode"
 //icon reference : just unicode icons - no 3rd party library.
 
@@ -28,10 +28,15 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedVenue, setSelectedVenue] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  // const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [credentials, setCredentials] = useState('')
-  const [user, setUser] = useState({});
-
+  const [user, setUser] = useState(() => {
+    try {
+      return JSON.parse(sessionStorage.getItem('campusPulse.profile'))
+    } catch {
+      return null
+    }
+  })
   const searchTerms = searchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean)
   const filteredEvents = events.filter((event) => {
     const matchesCategory = !selectedCategory || event.category === selectedCategory
@@ -53,10 +58,19 @@ function App() {
 
   function handleSuccess(credentialResponse) {
     console.log(credentialResponse)
-    setIsAuthenticated(true)
-    setCredentials(credentialResponse.credential)
-    setUser((olduser) => jwtDecode(credentialResponse.credential))
     console.log(jwtDecode(credentialResponse.credential))
+    const { sub, name, given_name, email, picture } = jwtDecode(credentialResponse.credential)
+    const profile = { sub, name, given_name, email, picture }
+
+    setCredentials(credentialResponse.credential)
+    sessionStorage.setItem('campusPulse.profile', JSON.stringify(profile))
+    setUser(profile)
+  }
+
+  function handleLogout() {
+    googleLogout()
+    sessionStorage.removeItem('campusPulse.profile')
+    setUser(null)
   }
 
   return (
@@ -76,7 +90,7 @@ function App() {
       <main className="campus-page" ref={contentRef} tabIndex={-1}>
       <div className="workspace-bar"><span>Campus / {activeView === 'dashboard' ? 'Dashboard' : 'Map'}</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-  {isAuthenticated ? (
+  {user ? (
     <>
       <span
         style={{
@@ -100,6 +114,12 @@ function App() {
           flexShrink: 0,
         }}
       />
+      <button
+        type="button"
+        onClick={handleLogout}
+      >
+        Sign out
+      </button>
     </>
   ) : (
     <GoogleLogin
