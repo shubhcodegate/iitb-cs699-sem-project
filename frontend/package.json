@@ -10,8 +10,10 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "firebase": "^13.2.0",
+    "@react-oauth/google": "^0.13.5",
+    "jwt-decode": "^4.0.0",
     "leaflet": "^1.9.4",
+    "oauth": "^0.10.2",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-leaflet": "^5.0.0"

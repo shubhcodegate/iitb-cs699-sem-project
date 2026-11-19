@@ -277,12 +277,49 @@ h2 {
 }
 .workspace-bar {
   display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 36px;
   font-size: 11px;
   color: #8190a1;
 }
+.account-trigger, .account-actions button {
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #263e56;
+  font: inherit;
+  cursor: pointer;
+}
+.account-trigger {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px;
+  font-size: 15px;
+  font-weight: 600;
+  anchor-name: --account;
+}
+.account-trigger img { border-radius: 50%; object-fit: cover; }
+.account-trigger:hover, .account-actions button:hover { background: #edf4fb; }
+.account-actions {
+  padding: 4px;
+  border: 1px solid #dce5ee;
+  border-radius: 10px;
+  background: white;
+  box-shadow: 0 4px 16px rgb(38 62 86 / 12%);
+}
+@supports (top: anchor(bottom)) {
+  .account-actions {
+    position-anchor: --account;
+    inset: auto;
+    top: anchor(bottom);
+    right: anchor(right);
+    margin: 4px 0 0;
+  }
+}
+.account-actions button { padding: 10px 18px; font-size: 14px; }
 .page-header {
   padding-bottom: 0;
   border: 0;
