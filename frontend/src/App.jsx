@@ -56,11 +56,27 @@ function App() {
     changeView('map')
   }
 
-  function handleSuccess(credentialResponse) {
+  async function handleSuccess(credentialResponse) {
     console.log(credentialResponse)
     console.log(jwtDecode(credentialResponse.credential))
     const { sub, name, given_name, email, picture } = jwtDecode(credentialResponse.credential)
     const profile = { sub, name, given_name, email, picture }
+
+    try {
+      const response = await fetch('/api/users', {
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          google_sub: profile.sub, 
+          display_name: profile.name,
+        })
+      })
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    } catch (error) {
+      console.error('Could not save profile:', error.message)
+      return
+    }
 
     setCredentials(credentialResponse.credential)
     sessionStorage.setItem('campusPulse.profile', JSON.stringify(profile))
@@ -89,45 +105,20 @@ function App() {
       </aside>
       <main className="campus-page" ref={contentRef} tabIndex={-1}>
       <div className="workspace-bar"><span>Campus / {activeView === 'dashboard' ? 'Dashboard' : 'Map'}</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-  {user ? (
-    <>
-      <span
-        style={{
-          fontSize: '16px',
-          fontWeight: 600,
-          lineHeight: 1.4,
-          color: '#263e56',
-        }}
-      >
-        Hi, {user.given_name}
-      </span>
-
-      <img
-        src={user.picture}
-        alt={`${user.given_name}'s profile`}
-        width={45}
-        height={45}
-        style={{
-          borderRadius: '50%',
-          objectFit: 'cover',
-          flexShrink: 0,
-        }}
-      />
-      <button
-        type="button"
-        onClick={handleLogout}
-      >
-        Sign out
-      </button>
-    </>
-  ) : (
-    <GoogleLogin
-      onSuccess={handleSuccess}
-      onError={() => console.log('authentication error')}
-    />
-  )}
-</div>
+        {user ? (
+          <div className="account-control">
+            <button type="button" className="account-trigger" popoverTarget="account-actions" aria-label="Account options">
+              <span>Hi, {user.given_name || user.name}</span>
+              {user.picture && <img src={user.picture} alt="" width="36" height="36" />}
+              <span aria-hidden="true">▾</span>
+            </button>
+            <div id="account-actions" popover="auto" className="account-actions">
+              <button type="button" onClick={handleLogout}>Sign out</button>
+            </div>
+          </div>
+        ) : (
+          <GoogleLogin onSuccess={handleSuccess} onError={() => console.log('authentication error')} />
+        )}
       </div>
       <header className="page-header">
         <h1>{activeView === 'dashboard' ? 'Your campus, at a glance' : 'Find your way around'}</h1>
