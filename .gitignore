@@ -9,3 +9,4 @@ __pycache__/
 *.pyc
 backend/*.db
 backend/*.db-*
+data/*.db
