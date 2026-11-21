@@ -1,8 +1,12 @@
-import { useState } from 'react'
+import { useActionState, useRef, useState } from 'react'
 import CampusMap from './components/CampusMap'
 import { events } from './data/events'
 import { venues } from './data/venues'
 import './App.css'
+import { GoogleLogin, googleLogout } from '@react-oauth/google'
+import { jwtDecode } from "jwt-decode"
+//icon reference : just unicode icons - no 3rd party library.
+
 
 const dateFormatter = new Intl.DateTimeFormat('en-IN', {
   day: 'numeric',
@@ -14,25 +18,134 @@ function formatDate(date) {
   return dateFormatter.format(new Date(`${date}T00:00:00`))
 }
 
+
+
 const categories = [...new Set(events.map((event) => event.category))].sort()
 
 function App() {
+  const [activeView, setActiveView] = useState('dashboard')
+  const contentRef = useRef(null)
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedVenue, setSelectedVenue] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  // const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [credentials, setCredentials] = useState('')
+  const [user, setUser] = useState(() => {
+    try {
+      return JSON.parse(sessionStorage.getItem('campusPulse.profile'))
+    } catch {
+      return null
+    }
+  })
+  const searchTerms = searchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean)
+  const filteredEvents = events.filter((event) => {
+    const matchesCategory = !selectedCategory || event.category === selectedCategory
+    const searchableText = [event.title, event.description, event.organizer, event.venue]
+      .filter(Boolean).join(' ').toLowerCase()
+    return matchesCategory && searchTerms.every((term) => searchableText.includes(term))
+  })
 
-  const filteredEvents = events.filter(
-    (event) => selectedCategory === '' || event.category === selectedCategory,
-  )
+  function changeView(view) {
+    setActiveView(view)
+    contentRef.current?.focus()
+    window.scrollTo({ top: 0, behavior: 'instant' })
+  }
+
+  function showVenue(venue) {
+    setSelectedVenue(venue)
+    changeView('map')
+  }
+
+  async function handleSuccess(credentialResponse) {
+    console.log(credentialResponse)
+    console.log(jwtDecode(credentialResponse.credential))
+    const { sub, name, given_name, email, picture } = jwtDecode(credentialResponse.credential)
+    const profile = { sub, name, given_name, email, picture }
+
+    try {
+      const response = await fetch('/api/users', {
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          google_sub: profile.sub, 
+          display_name: profile.name,
+        })
+      })
+
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+    } catch (error) {
+      console.error('Could not save profile:', error.message)
+      return
+    }
+
+    setCredentials(credentialResponse.credential)
+    sessionStorage.setItem('campusPulse.profile', JSON.stringify(profile))
+    setUser(profile)
+  }
+
+  function handleLogout() {
+    googleLogout()
+    sessionStorage.removeItem('campusPulse.profile')
+    setUser(null)
+  }
 
   return (
-    <main className="campus-page">
+    <div className="app-shell">
+      <aside className="sidebar">
+        <a className="sidebar-brand" href="#dashboard" onClick={() => changeView('dashboard')}>
+          <span className="brand-mark" aria-hidden="true">CP</span>
+          <span>Campus Pulse<small>IIT BOMBAY</small></span>
+        </a>
+        <p className="nav-label">EXPLORE</p>
+        <nav className="view-navigation" aria-label="Main navigation">
+          <button type="button" aria-current={activeView === 'dashboard' ? 'page' : undefined} onClick={() => changeView('dashboard')}><span aria-hidden="true">▦</span> Dashboard</button>
+          <button type="button" aria-current={activeView === 'map' ? 'page' : undefined} onClick={() => changeView('map')}><span aria-hidden="true">⌖</span> Campus map</button>
+        </nav>
+        <div className="sidebar-note">A little closer to campus.<span>Discover events, find your way,<br />and get involved.</span></div>
+      </aside>
+      <main className="campus-page" ref={contentRef} tabIndex={-1}>
+      <div className="workspace-bar"><span>Campus / {activeView === 'dashboard' ? 'Dashboard' : 'Map'}</span>
+        {user ? (
+          <div className="account-control">
+            <button type="button" className="account-trigger" popoverTarget="account-actions" aria-label="Account options">
+              <span>Hi, {user.given_name || user.name}</span>
+              {user.picture && <img src={user.picture} alt="" width="36" height="36" />}
+              <span aria-hidden="true">▾</span>
+            </button>
+            <div id="account-actions" popover="auto" className="account-actions">
+              <button type="button" onClick={handleLogout}>Sign out</button>
+            </div>
+          </div>
+        ) : (
+          <GoogleLogin onSuccess={handleSuccess} onError={() => console.log('authentication error')} />
+        )}
+      </div>
       <header className="page-header">
-        <h1>Campus Pulse</h1>
-        <p>Discover what’s happening around campus.</p>
+        <h1>{activeView === 'dashboard' ? 'Your campus, at a glance' : 'Find your way around'}</h1>
+        <p>{activeView === 'dashboard' ? 'Discover events and make a little more of your campus day.' : 'Explore campus venues and locate your next event.'}</p>
       </header>
 
-      <CampusMap selectedVenue={selectedVenue} />
-
+      {activeView === 'map' ? (
+        <div className="map-layout">
+          <CampusMap selectedVenue={selectedVenue} />
+          <aside className="venue-panel" aria-labelledby="venues-heading">
+            <h2 id="venues-heading">Campus venues</h2>
+            <p>Select a venue to locate it on the map.</p>
+            <div className="venue-list">{Object.entries(venues).map(([id, venue]) => (
+              <button type="button" key={id} aria-pressed={selectedVenue === venue} onClick={() => setSelectedVenue(venue)}>
+                <span>{venue.name}</span><span aria-hidden="true">↗</span>
+              </button>
+            ))}</div>
+            {selectedVenue && <p className="selected-venue" role="status">Viewing {selectedVenue.name}</p>}
+          </aside>
+        </div>
+      ) : (
+      <>
+      <div className="dashboard-summary" aria-label="Event overview">
+        <div><span>Events to explore</span><strong>{events.length}</strong><small>In the sample programme</small></div>
+        <div><span>Across your interests</span><strong>{categories.length}</strong><small>Event categories</small></div>
+        <div className="summary-map"><span>Know where to go</span><p>Get familiar with campus.</p><button type="button" onClick={() => changeView('map')}>Open campus map <span aria-hidden="true">↗</span></button></div>
+      </div>
       <section aria-labelledby="events-heading">
         <h2 id="events-heading">Upcoming events</h2>
         <p className="sample-notice">
@@ -40,7 +153,17 @@ function App() {
         </p>
 
         <div className="event-filters">
-          <label htmlFor="category-filter">Category</label>
+          <div className="event-search">
+            <label htmlFor="event-search">Search events</label>
+            <input
+              id="event-search"
+              type="search"
+              placeholder="Search titles, organizers, or venues"
+              value={searchQuery}
+              onChange={(event) => setSearchQuery(event.target.value)}
+            />
+          </div>
+          {/* <label htmlFor="category-filter">Category</label> */}
           <select
             id="category-filter"
             value={selectedCategory}
@@ -51,13 +174,19 @@ function App() {
               <option key={category} value={category}>{category}</option>
             ))}
           </select>
+          {(searchQuery || selectedCategory) && (
+            <button className="clear-filters-button" type="button" onClick={() => {
+              setSearchQuery('')
+              setSelectedCategory('')
+            }}>Clear filters</button>
+          )}
           <p role="status">
             Showing {filteredEvents.length} of {events.length} events
           </p>
         </div>
 
         {filteredEvents.length === 0 && (
-          <p>No events found. Try another category.</p>
+          <p className="search-empty-state">No events found. Try a different search or category, or clear your filters.</p>
         )}
 
         <div className="event-grid">
@@ -102,7 +231,7 @@ function App() {
                 className="show-on-map-button"
                 type="button"
                 disabled={!venues[event.venueId]}
-                onClick={() => setSelectedVenue(venues[event.venueId])}
+                onClick={() => showVenue(venues[event.venueId])}
               >
                 Show on map
               </button>
@@ -110,7 +239,10 @@ function App() {
           ))}
         </div>
       </section>
+      </>
+      )}
     </main>
+    </div>
   )
 }
 

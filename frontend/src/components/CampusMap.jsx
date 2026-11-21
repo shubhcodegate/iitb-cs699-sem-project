@@ -11,7 +11,12 @@ function MapFocus({ venue }) {
 
   useEffect(() => {
     if (!venue) return
-    map.flyTo([venue.latitude, venue.longitude], 17, { duration: 1 })
+
+    map.flyTo(
+      [venue.latitude, venue.longitude],
+      18,
+      { duration: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 1 },
+    )
   }, [map, venue])
 
   return null
@@ -23,7 +28,7 @@ function CampusMap({ selectedVenue }) {
       <h2 id="map-heading">Explore campus</h2>
       <p className="map-description">
         Drag to explore IIT Bombay and use the + and − buttons to zoom.
-        Event locations will appear here once venues are added.
+        Select a campus venue or use “Show on map” from the dashboard.
       </p>
 
       <MapContainer className="campus-map" center={CAMPUS_CENTER} zoom={16} scrollWheelZoom={false}>

@@ -9,9 +9,9 @@
 }
 
 .campus-map {
-  height: clamp(320px, 55vh, 500px);
+  height: clamp(320px, 45vh, 420px);
   width: 100%;
-  border: 1px solid #cbd5e1;
-  border-radius: 16px;
+  border: 1px solid #d6e0ea;
+  border-radius: 10px;
   z-index: 0;
 }

@@ -4,5 +4,9 @@ private
 .DS_Store
 .env
 
-data/*.db
+backend/.venv/
 __pycache__/
+*.pyc
+backend/*.db
+backend/*.db-*
+data/*.db
