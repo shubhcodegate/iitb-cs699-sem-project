@@ -33,9 +33,9 @@ function CampusMap({ selectedVenue }) {
 
       <MapContainer className="campus-map" center={CAMPUS_CENTER} zoom={16} scrollWheelZoom={false}>
         <TileLayer
-          url="https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png"
-          attribution='Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
-          maxZoom={17}
+          url="https://tile.openstreetmap.bzh/ca/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, Tiles courtesy of <a href="https://www.openstreetmap.cat" target="_blank">Breton OpenStreetMap Team</a>'
+          maxZoom={19}
         />
 
         {selectedVenue && (
