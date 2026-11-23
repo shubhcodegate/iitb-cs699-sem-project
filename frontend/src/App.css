@@ -514,3 +514,88 @@ button:focus-visible, a:focus-visible {
 @media (max-width: 600px) {
   .event-search { flex-basis: 100%; }
 }
+
+.mailbox-dialog {
+  width: min(440px, calc(100% - 32px));
+  margin: auto;
+  padding: clamp(24px, 5vw, 36px);
+  border: 1px solid #cddded;
+  border-top: 4px solid #24578a;
+  border-radius: 18px;
+  background: #fff;
+  color: #263e56;
+  box-shadow: 0 24px 80px rgb(16 39 66 / 28%);
+}
+.mailbox-dialog::backdrop {
+  background: rgb(19 39 61 / 55%);
+  backdrop-filter: blur(4px);
+}
+.mailbox-dialog h2 { font-size: 1.5rem; }
+.mailbox-dialog > p { margin: 8px 0 24px; color: #526579; line-height: 1.5; }
+.mailbox-dialog form, .mailbox-dialog label { display: grid; gap: 18px; }
+.mailbox-dialog label { gap: 7px; font-size: .9rem; font-weight: 600; }
+.mailbox-dialog input {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #afc2d5;
+  border-radius: 8px;
+  background: #f9fbfd;
+  color: inherit;
+  font: inherit;
+  font-weight: 400;
+}
+.mailbox-dialog input:focus-visible { outline: 2px solid #24578a; outline-offset: 2px; }
+.mailbox-dialog button {
+  padding: 12px;
+  border: 0;
+  border-radius: 8px;
+  background: #24578a;
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+}
+.mailbox-dialog button:hover { background: #1b456e; }
+.mailbox-dialog button:disabled { opacity: .7; cursor: wait; }
+.mailbox-dialog [role="alert"] { color: #963923; font-size: .9rem; }
+
+
+.calendar-link {
+  display: inline-block;
+  margin-top: 18px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #24578a;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.calendar-link:hover {
+  background: #1b456e;
+}
+
+.event-loading {
+  display: grid;
+  gap: 12px;
+  max-width: 420px;
+  padding: 20px;
+  border: 1px solid #dce5ee;
+  border-radius: 12px;
+  background: white;
+  color: #263e56;
+}
+
+.event-loading label { font-weight: 600; }
+.event-loading span { font-size: 0.9rem; }
+.event-loading progress { width: 100%; accent-color: #24578a; }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
