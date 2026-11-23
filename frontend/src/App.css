@@ -574,3 +574,28 @@ button:focus-visible, a:focus-visible {
 .calendar-link:hover {
   background: #1b456e;
 }
+
+.event-loading {
+  display: grid;
+  gap: 12px;
+  max-width: 420px;
+  padding: 20px;
+  border: 1px solid #dce5ee;
+  border-radius: 12px;
+  background: white;
+  color: #263e56;
+}
+
+.event-loading label { font-weight: 600; }
+.event-loading span { font-size: 0.9rem; }
+.event-loading progress { width: 100%; accent-color: #24578a; }
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}

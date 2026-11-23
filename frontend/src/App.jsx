@@ -63,6 +63,7 @@ function App() {
 
   const [events, setEvents] = useState([])
   const [eventsStatus, setEventsStatus] = useState('idle')
+  const [progress, setProgress] = useState(null)
   const eventsRequest = useRef(null)
 
   const categories = [...new Set(events.map(e => e.category).filter(Boolean))].sort()
@@ -101,6 +102,7 @@ function App() {
     const controller = new AbortController()
     eventsRequest.current = controller
     setEvents([])
+    setProgress(null)
     setEventsStatus('loading')
 
     try {
@@ -115,17 +117,51 @@ function App() {
       }
       if (!response.ok) throw new Error('Could not load events')
 
-      const data = await response.json()
-      if (controller.signal.aborted) return
+      if (!response.body) throw new Error('Missing response stream')
 
-      if (data.status === 'mailbox_required') {
-        setEventsStatus('idle')
-        mailboxDialogRef.current?.showModal()
-        return
+      const reader = response.body.pipeThrough(new TextDecoderStream()).getReader()
+      let buffer = ''
+
+      try {
+        while (true) {
+          const { value, done } = await reader.read()
+          if (controller.signal.aborted) return
+          if (done) throw new Error('Stream ended before events were ready')
+
+          buffer += value
+          const lines = buffer.split('\n')
+          buffer = lines.pop()
+
+          for (const line of lines) {
+            if (!line.trim()) continue
+            const update = JSON.parse(line)
+
+            switch (update.status) {
+              case 'fetching':
+                break
+
+              case 'progress':
+                setProgress({ processed: update.processed, total: update.total })
+                break
+
+              case 'mailbox_required':
+                setEventsStatus('idle')
+                mailboxDialogRef.current?.showModal()
+                return
+
+              case 'ready':
+                setEvents(update.events)
+                setEventsStatus('ready')
+                return
+
+              case 'error':
+                throw new Error('Email extraction failed')
+            }
+          }
+        }
+      } finally {
+        reader.releaseLock()
       }
-
-      setEvents(data.events)
-      setEventsStatus('ready')
     } catch {
       if (!controller.signal.aborted) setEventsStatus('error')
     }
@@ -273,7 +309,25 @@ function App() {
       ) : !user || !credentials ? (
         <p>Sign in with Google to load your upcoming events.</p>
       ) : eventsStatus === 'loading' ? (
-        <p role="status">Loading upcoming events from your IITB mail…</p>
+       <div className="event-loading">
+          <label htmlFor="event-progress">
+            {progress ? 'Checking emails for upcoming events' : 'Reading your IITB inbox…'}
+          </label>
+
+          {progress?.total > 0 ? (
+            <>
+              <progress
+                id="event-progress"
+                value={progress.processed}
+                max={progress.total}
+                aria-valuetext={`${progress.processed} of ${progress.total} emails checked`}
+              />
+              <span>Checked {progress.processed} of {progress.total} emails</span>
+            </>
+          ) : (
+            <progress id="event-progress" />
+          )}
+        </div>
       ) : eventsStatus === 'error' ? (
         <div>
           <p role="alert">Couldn’t load your events.</p>

@@ -6,6 +6,8 @@ from pathlib import Path
 import psycopg
 from dotenv import load_dotenv
 from fastapi import FastAPI, Header, HTTPException
+import json
+from fastapi.responses import StreamingResponse
 
 from pydantic import BaseModel
 
@@ -85,24 +87,35 @@ def fetch_recent_mail(google_sub: str, limit: int = 20) -> list[dict] | None:
 
     return emails
 
-def extract_recent_events(google_sub: str) -> list[dict] | None:
-    emails = fetch_recent_mail(google_sub)
-    if emails is None:
-        return None
+def stream_upcoming_events(google_sub: str):
+    def line(status, **fields):
+        return json.dumps({"status": status, **fields}) + "\n"
 
-    events = []
-    for mail in emails:
-        event = extract_event(mail)
-        if event and event.get("title"):
-            events.append(event)
+    yield line("fetching")
 
-    return events
+    try:
+        emails = fetch_recent_mail(google_sub)
+        if emails is None:
+            yield line("mailbox_required")
+            return
 
-def upcoming_events(google_sub: str) -> list[dict] | None:
-    events = extract_recent_events(google_sub)
-    if events is None:
-        return None
+        total = len(emails)
+        events = []
+        yield line("progress", processed=0, total=total)
 
+        for processed, mail in enumerate(emails, start=1):
+            event = extract_event(mail)
+            if event and event.get("title"):
+                events.append(event)
+
+            yield line("progress", processed=processed, total=total)
+
+        yield line("ready", events=filter_upcoming_events(events))
+
+    except Exception:
+        yield line("error")
+
+def filter_upcoming_events(events: list[dict]) -> list[dict]:
     ist = ZoneInfo("Asia/Kolkata")
     now = datetime.now(ist)
     upcoming = []
@@ -221,8 +234,11 @@ def get_upcoming_events(authorization: str = Header(default="")):
     except ValueError:
         raise HTTPException(status_code=401, detail="Please sign in again")
 
-    events = upcoming_events(account["sub"])
-    if events is None:
-        return {"status": "mailbox_required", "events": []}
-
-    return {"status": "ready", "events": events}
+    return StreamingResponse(
+        stream_upcoming_events(account["sub"]),
+        media_type="application/x-ndjson",
+        headers={
+            "Cache-Control": "no-store",
+            "X-Accel-Buffering": "no",
+        },
+    )
