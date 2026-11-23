@@ -557,3 +557,20 @@ button:focus-visible, a:focus-visible {
 .mailbox-dialog button:hover { background: #1b456e; }
 .mailbox-dialog button:disabled { opacity: .7; cursor: wait; }
 .mailbox-dialog [role="alert"] { color: #963923; font-size: .9rem; }
+
+
+.calendar-link {
+  display: inline-block;
+  margin-top: 18px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: #24578a;
+  color: white;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.calendar-link:hover {
+  background: #1b456e;
+}

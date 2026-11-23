@@ -128,7 +128,24 @@ def upcoming_events(google_sub: str) -> list[dict] | None:
             start = start.astimezone(ist)
 
         if start > now:
-            upcoming.append((start, event))
+            calendar_end = None
+            raw_end = event.get("end_time")
+
+            if isinstance(raw_end, str) and len(raw_end.strip()) > 10:
+                try:
+                    end = datetime.fromisoformat(raw_end.strip())
+                    if end.tzinfo is None:
+                        end = end.replace(tzinfo=ist)
+                    if end > start:
+                        calendar_end = end.isoformat()
+                except ValueError:
+                    pass
+
+            upcoming.append((start, {
+                **event,
+                "calendar_start": start.isoformat(),
+                "calendar_end": calendar_end,
+            }))
 
     upcoming.sort(key=lambda item: item[0])
     return [event for _, event in upcoming]

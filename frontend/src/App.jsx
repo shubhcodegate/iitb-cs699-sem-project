@@ -21,6 +21,33 @@ function restoreSession() {
   return null
 }
 
+function googleCalendarUrl(event) {
+  const start = new Date(event.calendar_start)
+  const end = event.calendar_end
+    ? new Date(event.calendar_end)
+    : new Date(start.getTime() + 60 * 60 * 1000)
+
+  function calendarTimestamp(date) {
+    return date.toISOString()
+      .replaceAll('-', '')
+      .replaceAll(':', '')
+      .replace(/\.\d{3}Z$/, 'Z')
+  }
+
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: event.title,
+    dates: `${calendarTimestamp(start)}/${calendarTimestamp(end)}`,
+    stz: 'Asia/Kolkata',
+    etz: 'Asia/Kolkata',
+  })
+
+  if (event.venue) params.set('location', event.venue)
+  if (event.organizer) params.set('details', `Organized by ${event.organizer}`)
+
+  return `https://calendar.google.com/calendar/r/eventedit?${params}`
+}
+
 function App() {
   const [activeView, setActiveView] = useState('dashboard')
   const contentRef = useRef(null)
@@ -322,6 +349,16 @@ function App() {
                   <dd>{event.organizer || 'Unspecified'}</dd>
                 </div>
               </dl>
+              {event.calendar_start && (
+                <a
+                  className="calendar-link"
+                  href={googleCalendarUrl(event)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Add to Google Calendar
+                </a>
+              )}
             </article>
           ))}
         </div>
