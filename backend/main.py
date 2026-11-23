@@ -1,3 +1,5 @@
+from campus_pulse.fetch import connect, fetch_new_emails
+
 import os
 from pathlib import Path
 
@@ -11,6 +13,7 @@ from cryptography.fernet import Fernet
 from google.auth.transport.requests import Request as GoogleRequest
 from google.oauth2 import id_token
 from pydantic import EmailStr, SecretStr
+
 
 project_root = Path(__file__).resolve().parents[1]
 load_dotenv(project_root / "private" / ".env")
@@ -58,6 +61,38 @@ def save_user(google_sub: str, display_name: str):
         "display_name": row[1],
         "mailbox_configured": row[2],
     }
+
+def load_mailbox_credentials(google_sub: str) -> tuple[str, str] | None:
+    with psycopg.connect(database_url, sslmode="require", connect_timeout=5) as db:
+        row = db.execute(
+            """
+            SELECT iitb_email, iitb_token_ciphertext
+            FROM private.app_users
+            WHERE google_sub = %s
+            """,
+            (google_sub,),
+        ).fetchone()
+
+    if row is None:
+        return None
+
+    email, encrypted_token = row
+    if not email or not encrypted_token:
+        return None
+
+    token = mailbox_cipher.decrypt(encrypted_token).decode("utf-8")
+    return email, token
+
+def fetch_recent_mail(google_sub: str, limit: int = 5) -> list[dict] | None:
+    credentials = load_mailbox_credentials(google_sub)
+    if credentials is None:
+        return None
+
+    email_address, access_token = credentials
+    with connect(email_address, access_token) as mail:
+        _, emails = fetch_new_emails(mail, limit=limit, newest_first=True)
+
+    return emails
 
 @app.post("/api/users")
 def save_profile(profile: UserProfile):

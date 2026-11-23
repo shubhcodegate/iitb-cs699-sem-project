@@ -20,12 +20,17 @@ load_dotenv(REPO_ROOT / "private" / ".env")
 
 BLOCK_TAGS = ["p", "div", "br", "li", "tr", "h1", "h2", "h3", "h4", "h5", "h6", "table"]
 
-def connect():
+def connect(email_address=None, access_token=None):
     """Log in to the IITB IMAP server and return the connection."""
+    if email_address is None and access_token is None:
+        email_address = os.environ["IITB_EMAIL"]
+        access_token = os.environ["IITB_IMAP_ACCESS_TOKEN"]
+    elif not email_address or not access_token:
+        raise ValueError("Both email address and access token are required")
     context = ssl.create_default_context()
     context.set_ciphers("DEFAULT")      # IITB's server needs older ciphers
     mail = imaplib.IMAP4_SSL(os.environ["IITB_IMAP_SERVER"], 993, ssl_context=context)
-    mail.login(os.environ["IITB_EMAIL"], os.environ["IITB_IMAP_ACCESS_TOKEN"])
+    mail.login(email_address, access_token)
     return mail
 
 
@@ -126,7 +131,7 @@ def parse_email(uid: int, raw_bytes: bytes, folder: str) -> dict:
     }
 
 
-def fetch_new_emails(mail: imaplib.IMAP4_SSL, folder="INBOX", since_uid=0, limit=None):
+def fetch_new_emails(mail: imaplib.IMAP4_SSL, folder="INBOX", since_uid=0, limit=None, *, newest_first=False):
     """Return (uidvalidity, emails) for emails with UID greater than since_uid."""
     mail.select(folder, readonly=True)                  # readonly: never change your mailbox
     _, data = mail.response("UIDVALIDITY")
@@ -136,7 +141,7 @@ def fetch_new_emails(mail: imaplib.IMAP4_SSL, folder="INBOX", since_uid=0, limit
     _, data = mail.uid("search", None, f"UID {since_uid + 1}:*")
     uids = [int(u) for u in data[0].split()]
     uids = [u for u in uids if u > since_uid]           # IMAP quirk: "MaxUID:*" always returns the newest email
-    uids.sort()
+    uids.sort(reverse=newest_first)
 
     if limit:
         uids = uids[:limit]                            # oldest N only

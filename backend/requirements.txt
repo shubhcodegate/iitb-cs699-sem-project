@@ -4,3 +4,4 @@ python-dotenv
 
 cryptography
 google-auth[requests]
+beautifulsoup4
