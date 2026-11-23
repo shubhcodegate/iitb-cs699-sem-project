@@ -15,7 +15,7 @@ from the email below. Category must be exactly one of: {", ".join(AUDIENCES)}. I
 
 Return start_time and end_time in ISO 8601 format (YYYY-MM-DD HH:MM). If only a date is available, include the date without inventing a time.
 If the email contains a date and time together, extract both correctly. Return only valid JSON with these keys:
-title, venue, start_time, end_time, organizer, category.If the email does not announce an event, return null."""
+title, venue, start_time, end_time, organizer, category. If the email does not announce an event, return null."""
 
 DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 EVENTS_DB = DATA_DIR / "events.db"

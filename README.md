@@ -43,7 +43,14 @@ Add instructions for setting up the development environment and installing depen
 
 ## Usage
 
-Add instructions for building and running the project.
+To extract events from IITB email, configure the variables in `.env.example` in
+`private/.env`, then run from the repository root:
+
+```bash
+PYTHONPATH=src python -m campus_pulse.extract
+```
+
+The script stores results in `data/events.db`.
 
 ## Testing
 
