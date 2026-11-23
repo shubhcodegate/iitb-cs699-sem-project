@@ -1,4 +1,4 @@
-import { useActionState, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import CampusMap from './components/CampusMap'
 import { events } from './data/events'
 import { venues } from './data/venues'
@@ -30,6 +30,12 @@ function App() {
   const [searchQuery, setSearchQuery] = useState('')
   // const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [credentials, setCredentials] = useState('')
+
+  const [savingMailbox, setSavingMailbox] = useState(false)
+  const [mailboxError, setMailboxError] = useState('')
+  const mailboxDialogRef = useRef(null)
+
+
   const [user, setUser] = useState(() => {
     try {
       return JSON.parse(sessionStorage.getItem('campusPulse.profile'))
@@ -57,8 +63,8 @@ function App() {
   }
 
   async function handleSuccess(credentialResponse) {
-    console.log(credentialResponse)
-    console.log(jwtDecode(credentialResponse.credential))
+    // console.log(credentialResponse)
+    // console.log(jwtDecode(credentialResponse.credential))
     const { sub, name, given_name, email, picture } = jwtDecode(credentialResponse.credential)
     const profile = { sub, name, given_name, email, picture }
 
@@ -73,14 +79,54 @@ function App() {
       })
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
+
+      const { mailbox_configured } = await response.json()
+      if (mailbox_configured) {
+        sessionStorage.setItem('campusPulse.profile', JSON.stringify(profile))
+      } else {
+        sessionStorage.removeItem('campusPulse.profile')
+        mailboxDialogRef.current?.showModal()
+      }
+
     } catch (error) {
       console.error('Could not save profile:', error.message)
       return
     }
 
     setCredentials(credentialResponse.credential)
-    sessionStorage.setItem('campusPulse.profile', JSON.stringify(profile))
     setUser(profile)
+  }
+
+  async function submitMailbox(event) {
+    event.preventDefault()
+    if (savingMailbox) return
+    const form = event.currentTarget
+    const fields = new FormData(form)
+    setSavingMailbox(true)
+    setMailboxError('')
+    try {
+      const response = await fetch('/api/mailbox', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          google_credential: credentials,
+          iitb_email: fields.get('iitb_email'),
+          access_token: fields.get('access_token'),
+        }),
+      })
+      if (response.status === 401) {
+        setMailboxError('Your sign-in expired. Refresh the page and sign in again.')
+        return
+      }
+      if (!response.ok) throw new Error('Save failed')
+      form.reset()
+      sessionStorage.setItem('campusPulse.profile', JSON.stringify(user))
+      mailboxDialogRef.current.close()
+    } catch {
+      setMailboxError('Could not save your mailbox details. Please try again.')
+    } finally {
+      setSavingMailbox(false)
+    }
   }
 
   function handleLogout() {
@@ -91,6 +137,21 @@ function App() {
 
   return (
     <div className="app-shell">
+      <dialog ref={mailboxDialogRef} className="mailbox-dialog" aria-labelledby="mailbox-title"
+        onCancel={(event) => event.preventDefault()}>
+        <h2 id="mailbox-title">Connect your IITB email</h2>
+        <p>Enter your institute email and IITB access token to set up your mailbox.</p>
+        <form onSubmit={submitMailbox}>
+          <label>Institute email
+            <input type="email" name="iitb_email" autoComplete="email" required />
+          </label>
+          <label>IITB access token
+            <input type="password" name="access_token" autoComplete="off" required />
+          </label>
+          {mailboxError && <p role="alert">{mailboxError}</p>}
+          <button type="submit" disabled={savingMailbox}>{savingMailbox ? 'Saving…' : 'Submit'}</button>
+        </form>
+      </dialog>
       <aside className="sidebar">
         <a className="sidebar-brand" href="#dashboard" onClick={() => changeView('dashboard')}>
           <span className="brand-mark" aria-hidden="true">CP</span>

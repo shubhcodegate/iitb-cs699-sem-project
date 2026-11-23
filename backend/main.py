@@ -7,9 +7,17 @@ from fastapi import FastAPI, HTTPException
 
 from pydantic import BaseModel
 
+from cryptography.fernet import Fernet
+from google.auth.transport.requests import Request as GoogleRequest
+from google.oauth2 import id_token
+from pydantic import EmailStr, SecretStr
+
 project_root = Path(__file__).resolve().parents[1]
 load_dotenv(project_root / "private" / ".env")
 database_url = os.environ["DATABASE_URL"]
+
+mailbox_cipher = Fernet(os.environ["MAILBOX_ENCRYPTION_KEY"].encode())
+google_client_id = os.environ["VITE_GOOGLE_CLIENT_ID"]
 
 app = FastAPI(title="Campus Pulse API")
 
@@ -39,14 +47,57 @@ def save_user(google_sub: str, display_name: str):
             VALUES (%s, %s)
             ON CONFLICT (google_sub) DO UPDATE
             SET display_name = EXCLUDED.display_name
-            RETURNING google_sub, display_name
+            RETURNING google_sub, display_name,
+            (iitb_email IS NOT NULL AND iitb_token_ciphertext IS NOT NULL)
             """,
             (google_sub, display_name),
         ).fetchone()
 
-    return {"google_sub": row[0], "display_name": row[1]}
-
+    return {
+        "google_sub": row[0],
+        "display_name": row[1],
+        "mailbox_configured": row[2],
+    }
 
 @app.post("/api/users")
 def save_profile(profile: UserProfile):
     return save_user(profile.google_sub, profile.display_name)
+
+
+class MailboxSetup(BaseModel): 
+    google_credential: SecretStr
+    iitb_email: EmailStr
+    access_token: SecretStr
+
+@app.post("/api/mailbox")
+def save_mailbox(form: MailboxSetup):
+    try:
+        account = id_token.verify_oauth2_token(
+            form.google_credential.get_secret_value(),
+            GoogleRequest(),
+            google_client_id,
+        )
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Please sign in again")
+
+    token = form.access_token.get_secret_value().strip()
+    if not token:
+        raise HTTPException(status_code=400, detail="Enter your IITB access token")
+
+    encrypted_token = mailbox_cipher.encrypt(token.encode())
+
+    with psycopg.connect(database_url, sslmode="require", connect_timeout=5) as db:
+        row = db.execute(
+            """
+            UPDATE private.app_users
+            SET iitb_email = %s, iitb_token_ciphertext = %s
+            WHERE google_sub = %s
+            RETURNING google_sub
+            """,
+            (str(form.iitb_email), encrypted_token, account["sub"]),
+        ).fetchone()
+
+    if row is None:
+        raise HTTPException(status_code=404, detail="Save the user profile first")
+
+    return {"mailbox_configured": True}
