@@ -1,6 +1,5 @@
-import { useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import CampusMap from './components/CampusMap'
-import { events } from './data/events'
 import { venues } from './data/venues'
 import './App.css'
 import { GoogleLogin, googleLogout } from '@react-oauth/google'
@@ -8,19 +7,19 @@ import { jwtDecode } from "jwt-decode"
 //icon reference : just unicode icons - no 3rd party library.
 
 
-const dateFormatter = new Intl.DateTimeFormat('en-IN', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-})
+const sessionKey = 'campusPulse.session'
 
-function formatDate(date) {
-  return dateFormatter.format(new Date(`${date}T00:00:00`))
+function restoreSession() {
+  try {
+    const session = JSON.parse(sessionStorage.getItem(sessionKey))
+    if (session?.profile && jwtDecode(session.credential).exp * 1000 > Date.now()) {
+      return session
+    }
+  } catch {
+    // A malformed saved session requires a fresh sign-in.
+  }
+  return null
 }
-
-
-
-const categories = [...new Set(events.map((event) => event.category))].sort()
 
 function App() {
   const [activeView, setActiveView] = useState('dashboard')
@@ -28,25 +27,24 @@ function App() {
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedVenue, setSelectedVenue] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
-  // const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [credentials, setCredentials] = useState('')
-
+  const [session, setSession] = useState(restoreSession)
+  const credentials = session?.credential
+  const user = session?.profile
   const [savingMailbox, setSavingMailbox] = useState(false)
   const [mailboxError, setMailboxError] = useState('')
   const mailboxDialogRef = useRef(null)
 
+  const [events, setEvents] = useState([])
+  const [eventsStatus, setEventsStatus] = useState('idle')
+  const eventsRequest = useRef(null)
 
-  const [user, setUser] = useState(() => {
-    try {
-      return JSON.parse(sessionStorage.getItem('campusPulse.profile'))
-    } catch {
-      return null
-    }
-  })
+  const categories = [...new Set(events.map(e => e.category).filter(Boolean))].sort()
+
+
   const searchTerms = searchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean)
   const filteredEvents = events.filter((event) => {
     const matchesCategory = !selectedCategory || event.category === selectedCategory
-    const searchableText = [event.title, event.description, event.organizer, event.venue]
+    const searchableText = [event.title, event.organizer, event.venue]
       .filter(Boolean).join(' ').toLowerCase()
     return matchesCategory && searchTerms.every((term) => searchableText.includes(term))
   })
@@ -57,10 +55,68 @@ function App() {
     window.scrollTo({ top: 0, behavior: 'instant' })
   }
 
-  function showVenue(venue) {
-    setSelectedVenue(venue)
-    changeView('map')
-  }
+  const handleLogout = useCallback(() => {
+    eventsRequest.current?.abort()
+    mailboxDialogRef.current?.querySelector('form')?.reset()
+    mailboxDialogRef.current?.close()
+    setMailboxError('')
+    setEvents([])
+    setEventsStatus('idle')
+    setSelectedCategory('')
+    setSearchQuery('')
+    googleLogout()
+    sessionStorage.removeItem(sessionKey)
+    setSession(null)
+  }, [])
+
+  const loadUpcomingEvents = useCallback(async (credential) => {
+    eventsRequest.current?.abort()
+    const controller = new AbortController()
+    eventsRequest.current = controller
+    setEvents([])
+    setEventsStatus('loading')
+
+    try {
+      const response = await fetch('/api/events/upcoming', {
+        headers: { Authorization: `Bearer ${credential}` },
+        signal: controller.signal,
+      })
+
+      if (response.status === 401) {
+        if (!controller.signal.aborted) handleLogout()
+        return
+      }
+      if (!response.ok) throw new Error('Could not load events')
+
+      const data = await response.json()
+      if (controller.signal.aborted) return
+
+      if (data.status === 'mailbox_required') {
+        setEventsStatus('idle')
+        mailboxDialogRef.current?.showModal()
+        return
+      }
+
+      setEvents(data.events)
+      setEventsStatus('ready')
+    } catch {
+      if (!controller.signal.aborted) setEventsStatus('error')
+    }
+  }, [handleLogout])
+
+  useEffect(() => {
+    sessionStorage.removeItem('campusPulse.profile')
+    if (!credentials) {
+      sessionStorage.removeItem(sessionKey)
+      return
+    }
+    // Defer the request so StrictMode cleanup can cancel a duplicate initial load.
+    const timer = setTimeout(() => loadUpcomingEvents(credentials), 0)
+    return () => {
+      clearTimeout(timer)
+      eventsRequest.current?.abort()
+    }
+  }, [credentials, loadUpcomingEvents])
 
   async function handleSuccess(credentialResponse) {
     // console.log(credentialResponse)
@@ -80,21 +136,14 @@ function App() {
 
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
 
-      const { mailbox_configured } = await response.json()
-      if (mailbox_configured) {
-        sessionStorage.setItem('campusPulse.profile', JSON.stringify(profile))
-      } else {
-        sessionStorage.removeItem('campusPulse.profile')
-        mailboxDialogRef.current?.showModal()
-      }
-
+      const signedIn = { credential: credentialResponse.credential, profile }
+      sessionStorage.setItem(sessionKey, JSON.stringify(signedIn))
+      setSession(signedIn)
     } catch (error) {
       console.error('Could not save profile:', error.message)
       return
     }
 
-    setCredentials(credentialResponse.credential)
-    setUser(profile)
   }
 
   async function submitMailbox(event) {
@@ -115,24 +164,18 @@ function App() {
         }),
       })
       if (response.status === 401) {
-        setMailboxError('Your sign-in expired. Refresh the page and sign in again.')
+        handleLogout()
         return
       }
       if (!response.ok) throw new Error('Save failed')
       form.reset()
-      sessionStorage.setItem('campusPulse.profile', JSON.stringify(user))
       mailboxDialogRef.current.close()
+      void loadUpcomingEvents(credentials)
     } catch {
       setMailboxError('Could not save your mailbox details. Please try again.')
     } finally {
       setSavingMailbox(false)
     }
-  }
-
-  function handleLogout() {
-    googleLogout()
-    sessionStorage.removeItem('campusPulse.profile')
-    setUser(null)
   }
 
   return (
@@ -166,7 +209,7 @@ function App() {
       </aside>
       <main className="campus-page" ref={contentRef} tabIndex={-1}>
       <div className="workspace-bar"><span>Campus / {activeView === 'dashboard' ? 'Dashboard' : 'Map'}</span>
-        {user ? (
+        {user && credentials ? (
           <div className="account-control">
             <button type="button" className="account-trigger" popoverTarget="account-actions" aria-label="Account options">
               <span>Hi, {user.given_name || user.name}</span>
@@ -200,19 +243,28 @@ function App() {
             {selectedVenue && <p className="selected-venue" role="status">Viewing {selectedVenue.name}</p>}
           </aside>
         </div>
+      ) : !user || !credentials ? (
+        <p>Sign in with Google to load your upcoming events.</p>
+      ) : eventsStatus === 'loading' ? (
+        <p role="status">Loading upcoming events from your IITB mail…</p>
+      ) : eventsStatus === 'error' ? (
+        <div>
+          <p role="alert">Couldn’t load your events.</p>
+          <button type="button" onClick={() => loadUpcomingEvents(credentials)}>Try again</button>
+        </div>
+      ) : eventsStatus === 'idle' ? (
+        <p>Connect your IITB mailbox to load events.</p>
+      ) : events.length === 0 ? (
+        <p>No upcoming events found in your recent mail.</p>
       ) : (
       <>
       <div className="dashboard-summary" aria-label="Event overview">
-        <div><span>Events to explore</span><strong>{events.length}</strong><small>In the sample programme</small></div>
+        <div><span>Events to explore</span><strong>{events.length}</strong><small>From your recent IITB mail</small></div>
         <div><span>Across your interests</span><strong>{categories.length}</strong><small>Event categories</small></div>
         <div className="summary-map"><span>Know where to go</span><p>Get familiar with campus.</p><button type="button" onClick={() => changeView('map')}>Open campus map <span aria-hidden="true">↗</span></button></div>
       </div>
       <section aria-labelledby="events-heading">
         <h2 id="events-heading">Upcoming events</h2>
-        <p className="sample-notice">
-          Sample events for demonstration. All times are in IST.
-        </p>
-
         <div className="event-filters">
           <div className="event-search">
             <label htmlFor="event-search">Search events</label>
@@ -252,50 +304,24 @@ function App() {
 
         <div className="event-grid">
           {filteredEvents.map((event) => (
-            <article className="event-card" key={event.id}>
-              <span className="event-category">{event.category}</span>
-
+            <article className="event-card" key={JSON.stringify([event.title, event.start_time, event.venue, event.organizer])}>
+              {event.category && <span className="event-category">{event.category}</span>}
               <h3>{event.title}</h3>
-              <p className="event-description">{event.description}</p>
 
               <dl className="event-meta">
                 <div>
-                  <dt>Date</dt>
-                  <dd>
-                    <time dateTime={event.date}>
-                      {formatDate(event.date)}
-                    </time>
-                  </dd>
+                  <dt>Starts</dt>
+                  <dd>{event.start_time}</dd>
                 </div>
-
-                <div>
-                  <dt>Time</dt>
-                  <dd>{event.startTime}–{event.endTime}</dd>
-                </div>
-
                 <div>
                   <dt>Venue</dt>
-                  <dd>{event.venue}</dd>
+                  <dd>{event.venue || 'Unspecified'}</dd>
                 </div>
-
                 <div>
                   <dt>Organizer</dt>
-                  <dd>{event.organizer}</dd>
-                </div>
-
-                <div>
-                  <dt>Audience</dt>
-                  <dd>{event.audience}</dd>
+                  <dd>{event.organizer || 'Unspecified'}</dd>
                 </div>
               </dl>
-              <button
-                className="show-on-map-button"
-                type="button"
-                disabled={!venues[event.venueId]}
-                onClick={() => showVenue(venues[event.venueId])}
-              >
-                Show on map
-              </button>
             </article>
           ))}
         </div>

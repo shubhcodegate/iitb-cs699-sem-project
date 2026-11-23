@@ -5,7 +5,7 @@ from pathlib import Path
 
 import psycopg
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 
 from pydantic import BaseModel
 
@@ -14,6 +14,10 @@ from google.auth.transport.requests import Request as GoogleRequest
 from google.oauth2 import id_token
 from pydantic import EmailStr, SecretStr
 
+from campus_pulse.extract import extract_event
+
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 project_root = Path(__file__).resolve().parents[1]
 load_dotenv(project_root / "private" / ".env")
@@ -28,19 +32,6 @@ class UserProfile(BaseModel):
     google_sub: str
     display_name: str
 
-@app.get("/health")
-def health_check():
-    return {"status": "OK"}
-
-@app.get("/health/db")
-def database_health():
-    try:
-        with psycopg.connect(database_url, sslmode="require", connect_timeout=5) as db:
-            db.execute("SELECT 1").fetchone()
-    except psycopg.OperationalError:
-        raise HTTPException(status_code=503, detail="Database connection failed")
-
-    return {"database": "connected"}
 
 def save_user(google_sub: str, display_name: str): 
     with psycopg.connect(database_url, sslmode="require", connect_timeout=5) as db: 
@@ -83,7 +74,7 @@ def load_mailbox_credentials(google_sub: str) -> tuple[str, str] | None:
     token = mailbox_cipher.decrypt(encrypted_token).decode("utf-8")
     return email, token
 
-def fetch_recent_mail(google_sub: str, limit: int = 5) -> list[dict] | None:
+def fetch_recent_mail(google_sub: str, limit: int = 20) -> list[dict] | None:
     credentials = load_mailbox_credentials(google_sub)
     if credentials is None:
         return None
@@ -93,6 +84,69 @@ def fetch_recent_mail(google_sub: str, limit: int = 5) -> list[dict] | None:
         _, emails = fetch_new_emails(mail, limit=limit, newest_first=True)
 
     return emails
+
+def extract_recent_events(google_sub: str) -> list[dict] | None:
+    emails = fetch_recent_mail(google_sub)
+    if emails is None:
+        return None
+
+    events = []
+    for mail in emails:
+        event = extract_event(mail)
+        if event and event.get("title"):
+            events.append(event)
+
+    return events
+
+def upcoming_events(google_sub: str) -> list[dict] | None:
+    events = extract_recent_events(google_sub)
+    if events is None:
+        return None
+
+    ist = ZoneInfo("Asia/Kolkata")
+    now = datetime.now(ist)
+    upcoming = []
+
+    for event in events:
+        raw_start = event.get("start_time")
+        if not isinstance(raw_start, str):
+            continue
+
+        # The extractor can return a date without a known time.
+        raw_start = raw_start.strip()
+        if len(raw_start) <= 10:
+            continue
+
+        try:
+            start = datetime.fromisoformat(raw_start)
+        except ValueError:
+            continue
+
+        if start.tzinfo is None:
+            start = start.replace(tzinfo=ist)
+        else:
+            start = start.astimezone(ist)
+
+        if start > now:
+            upcoming.append((start, event))
+
+    upcoming.sort(key=lambda item: item[0])
+    return [event for _, event in upcoming]
+
+
+@app.get("/health")
+def health_check():
+    return {"status": "OK"}
+
+@app.get("/health/db")
+def database_health():
+    try:
+        with psycopg.connect(database_url, sslmode="require", connect_timeout=5) as db:
+            db.execute("SELECT 1").fetchone()
+    except psycopg.OperationalError:
+        raise HTTPException(status_code=503, detail="Database connection failed")
+
+    return {"database": "connected"}
 
 @app.post("/api/users")
 def save_profile(profile: UserProfile):
@@ -136,3 +190,22 @@ def save_mailbox(form: MailboxSetup):
         raise HTTPException(status_code=404, detail="Save the user profile first")
 
     return {"mailbox_configured": True}
+
+@app.get("/api/events/upcoming")
+def get_upcoming_events(authorization: str = Header(default="")):
+    scheme, _, credential = authorization.partition(" ")
+    if scheme.lower() != "bearer" or not credential:
+        raise HTTPException(status_code=401, detail="Please sign in")
+
+    try:
+        account = id_token.verify_oauth2_token(
+            credential, GoogleRequest(), google_client_id
+        )
+    except ValueError:
+        raise HTTPException(status_code=401, detail="Please sign in again")
+
+    events = upcoming_events(account["sub"])
+    if events is None:
+        return {"status": "mailbox_required", "events": []}
+
+    return {"status": "ready", "events": events}
