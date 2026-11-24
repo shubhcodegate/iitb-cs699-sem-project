@@ -54,6 +54,7 @@ install the Python and Node packages:
 python3 -m venv .venv
 source .venv/bin/activate          # Windows: .venv\Scripts\activate
 python3 -m pip install -r backend/requirements.txt
+python3 -m pip install -r ./requirements.txt
 npm install
 npm --prefix frontend install
 ```
@@ -74,15 +75,15 @@ cp .env.example private/.env
 
 Then fill in each value:
 
-| Variable | What it's for | How to get it |
-|---|---|---|
-| `IITB_IMAP_SERVER` | IITB mail server | Keep `imap.iitb.ac.in` |
-| `IITB_EMAIL` | Your IITB email, for the extract script | Your `@iitb.ac.in` address |
-| `IITB_IMAP_ACCESS_TOKEN` | Mailbox access, for the extract script | [Steps to generate SSO Access Token](./docs/design/Steps-to-generate-SSO-Access-Token.md) |
-| `GROQ_API_KEY` | Extracting event details from emails | [Steps to generate Groq API Token](./docs/design/Steps-to-generate-ChatGroq-API-Token.md) |
-| `DATABASE_URL` | Postgres for user profiles and mailbox settings | Ask a teammate for the Supabase connection string (see step 4) |
-| `MAILBOX_ENCRYPTION_KEY` | Encrypting saved IITB access tokens | Generate one (see step 3) |
-| `VITE_GOOGLE_CLIENT_ID` | Google sign-in | Create an OAuth client (see step 3) |
+| Variable                 | What it's for                                   | How to get it                                                                             |
+| ------------------------ | ----------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| `IITB_IMAP_SERVER`       | IITB mail server                                | Keep `imap.iitb.ac.in`                                                                    |
+| `IITB_EMAIL`             | Your IITB email, for the extract script         | Your `@iitb.ac.in` address                                                                |
+| `IITB_IMAP_ACCESS_TOKEN` | Mailbox access, for the extract script          | [Steps to generate SSO Access Token](./docs/design/Steps-to-generate-SSO-Access-Token.md) |
+| `GROQ_API_KEY`           | Extracting event details from emails            | [Steps to generate Groq API Token](./docs/design/Steps-to-generate-ChatGroq-API-Token.md) |
+| `DATABASE_URL`           | Postgres for user profiles and mailbox settings | Ask a teammate for the Supabase connection string (see step 4)                            |
+| `MAILBOX_ENCRYPTION_KEY` | Encrypting saved IITB access tokens             | Generate one (see step 3)                                                                 |
+| `VITE_GOOGLE_CLIENT_ID`  | Google sign-in                                  | Create an OAuth client (see step 3)                                                       |
 
 The backend won't start if `MAILBOX_ENCRYPTION_KEY` or `VITE_GOOGLE_CLIENT_ID` is
 missing.
@@ -137,8 +138,7 @@ With the virtual environment active, from the repository root:
 npm run dev
 ```
 
-This starts the backend (FastAPI on port 8000) and the frontend (Vite on port
-5173) together. Open http://localhost:5173. Press Ctrl+C to stop both.
+This starts the backend (FastAPI on port 8000) and the frontend (Vite on port 5173) together. Open http://localhost:5173. Press Ctrl+C to stop both.
 
 To run them separately, use two terminals:
 
@@ -175,13 +175,13 @@ The script stores results in `data/events.db`.
 
 ### Troubleshooting
 
-| Problem | Fix |
-|---|---|
-| `KeyError: 'MAILBOX_ENCRYPTION_KEY'` or `'VITE_GOOGLE_CLIENT_ID'` | Add the missing value to `private/.env` |
-| `ModuleNotFoundError` when the backend starts | Activate the virtual environment, then run `npm run dev` again |
-| Vite fails with `does not provide an export named 'styleText'` | Your Node is too old. Run `nvm use 22` |
-| "Could not save event. Check that the backend is running." | Start the backend; the frontend sends `/api` requests to port 8000 |
-| Google sign-in button errors | Check `VITE_GOOGLE_CLIENT_ID`, and that `http://localhost:5173` is an authorized origin |
+| Problem                                                           | Fix                                                                                     |
+| ----------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| `KeyError: 'MAILBOX_ENCRYPTION_KEY'` or `'VITE_GOOGLE_CLIENT_ID'` | Add the missing value to `private/.env`                                                 |
+| `ModuleNotFoundError` when the backend starts                     | Activate the virtual environment, then run `npm run dev` again                          |
+| Vite fails with `does not provide an export named 'styleText'`    | Your Node is too old. Run `nvm use 22`                                                  |
+| "Could not save event. Check that the backend is running."        | Start the backend; the frontend sends `/api` requests to port 8000                      |
+| Google sign-in button errors                                      | Check `VITE_GOOGLE_CLIENT_ID`, and that `http://localhost:5173` is an authorized origin |
 
 ## Testing
 
