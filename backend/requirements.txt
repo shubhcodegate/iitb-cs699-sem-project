@@ -1,0 +1,9 @@
+fastapi[standard]
+psycopg[binary]
+python-dotenv
+
+cryptography
+google-auth[requests]
+beautifulsoup4
+langchain-core
+langchain-groq

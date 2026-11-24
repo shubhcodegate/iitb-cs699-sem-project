@@ -39,11 +39,45 @@ Semester-long software project for **CS699: Software Lab** at the **Indian Insti
 
 ## Setup
 
-Add instructions for setting up the development environment and installing dependencies.
+From the repository root, install dependencies once. If you use a Python virtual
+environment, activate it before installing or running the app.
+
+```bash
+python3 -m pip install -r backend/requirements.txt
+npm install
+npm --prefix frontend install
+```
 
 ## Usage
 
-Add instructions for building and running the project.
+Run `npm run dev` at the repository root to start FastAPI and Vite together.
+Open the local URL printed by Vite. Press Ctrl+C to stop both.
+
+The frontend needs Node 20.19+ or 22.12+ (for example, run `nvm use 22` first).
+
+To extract events from IITB email, configure the variables in `.env.example` in
+`private/.env`, then run from the repository root:
+
+```bash
+PYTHONPATH=src python -m campus_pulse.extract
+```
+
+The script stores results in `data/events.db`.
+
+To run backend:
+
+```sh
+cd backend
+PYTHONPATH=../src fastapi dev main.py
+```
+
+To run frontend:
+
+```sh
+cd frontend
+nvm use 22
+npm run dev
+```
 
 ## Testing
 
