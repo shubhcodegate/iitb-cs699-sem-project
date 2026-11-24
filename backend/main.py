@@ -76,7 +76,7 @@ def load_mailbox_credentials(google_sub: str) -> tuple[str, str] | None:
     token = mailbox_cipher.decrypt(encrypted_token).decode("utf-8")
     return email, token
 
-def fetch_recent_mail(google_sub: str, limit: int = 20) -> list[dict] | None:
+def fetch_recent_mail(google_sub: str, limit: int = 15) -> list[dict] | None:
     credentials = load_mailbox_credentials(google_sub)
     if credentials is None:
         return None
@@ -112,7 +112,8 @@ def stream_upcoming_events(google_sub: str):
 
         yield line("ready", events=filter_upcoming_events(events))
 
-    except Exception:
+    except Exception as exc:
+        print("Event extraction failed:", type(exc).__name__, flush=True)
         yield line("error")
 
 def filter_upcoming_events(events: list[dict]) -> list[dict]:

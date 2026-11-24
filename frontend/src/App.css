@@ -599,3 +599,22 @@ button:focus-visible, a:focus-visible {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+.event-map-link {
+  display: inline-block;
+  margin: 18px 8px 0 0;
+  padding: 9px 12px;
+  border: 1px solid #adc3d9;
+  border-radius: 8px;
+  background: white;
+  color: #24578a;
+  font: inherit;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.event-map-link:hover {
+  background: #edf4fb;
+}
