@@ -44,6 +44,22 @@ Add instructions for setting up the development environment and installing depen
 ## Usage
 
 Add instructions for building and running the project.
+Run the backend and frontend in two terminals.
+
+Backend (from the repository root):
+
+```sh
+source cs699-sem-proj/bin/activate
+uvicorn backend.main:app --reload --port 8000
+```
+
+Frontend (needs Node 20.19+ or 22.12+):
+
+```sh
+cd frontend
+nvm use 22
+npm run dev
+```
 
 ## Testing
 
