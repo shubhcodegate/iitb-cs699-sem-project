@@ -48,6 +48,35 @@ function googleCalendarUrl(event) {
   return `https://calendar.google.com/calendar/r/eventedit?${params}`
 }
 
+function normalizeVenue(value) {
+  return value
+    .toLowerCase()
+    .replaceAll('&', ' and ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim()
+}
+
+function findVenue(venueText) {
+  if (!venueText) return null
+
+  const text = ` ${normalizeVenue(venueText)} `
+  let bestMatch = null
+  let longestMatch = 0
+
+  for (const [key, venue] of Object.entries(venues)) {
+    for (const alias of [key, venue.name]) {
+      const name = normalizeVenue(alias)
+
+      if (name.length > longestMatch && text.includes(` ${name} `)) {
+        bestMatch = venue
+        longestMatch = name.length
+      }
+    }
+  }
+
+  return bestMatch
+}
+
 function App() {
   const [activeView, setActiveView] = useState('dashboard')
   const contentRef = useRef(null)
@@ -71,6 +100,7 @@ function App() {
 
   const searchTerms = searchQuery.trim().toLowerCase().split(/\s+/).filter(Boolean)
   const filteredEvents = events.filter((event) => {
+    
     const matchesCategory = !selectedCategory || event.category === selectedCategory
     const searchableText = [event.title, event.organizer, event.venue]
       .filter(Boolean).join(' ').toLowerCase()
@@ -384,7 +414,10 @@ function App() {
         )}
 
         <div className="event-grid">
-          {filteredEvents.map((event) => (
+          {filteredEvents.map((event) => {
+            const venue = findVenue(event.venue)
+
+            return (
             <article className="event-card" key={JSON.stringify([event.title, event.start_time, event.venue, event.organizer])}>
               {event.category && <span className="event-category">{event.category}</span>}
               <h3>{event.title}</h3>
@@ -403,6 +436,29 @@ function App() {
                   <dd>{event.organizer || 'Unspecified'}</dd>
                 </div>
               </dl>
+              {venue ? (
+                <button
+                  type="button"
+                  className="event-map-link"
+                  onClick={() => {
+                    setSelectedVenue(venue)
+                    changeView('map')
+                  }}
+                >
+                  Show on campus map
+                </button>
+              ) : event.venue ? (
+                <a
+                  className="event-map-link"
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                    `${event.venue}, IIT Bombay`
+                  )}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Search venue on Maps
+                </a>
+              ) : null}
               {event.calendar_start && (
                 <a
                   className="calendar-link"
@@ -413,8 +469,9 @@ function App() {
                   Add to Google Calendar
                 </a>
               )}
-            </article>
-          ))}
+              </article>
+              )
+            })}
         </div>
       </section>
       </>

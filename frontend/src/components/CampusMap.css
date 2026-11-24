@@ -15,3 +15,24 @@
   border-radius: 10px;
   z-index: 0;
 }
+
+.my-location-button {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 800;
+  padding: 10px 14px;
+  border: 1px solid #adc3d9;
+  border-radius: 8px;
+  background: white;
+  color: #24578a;
+  box-shadow: 0 2px 6px rgb(0 0 0 / 15%);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.my-location-button:disabled {
+  opacity: 0.65;
+  cursor: default;
+}
