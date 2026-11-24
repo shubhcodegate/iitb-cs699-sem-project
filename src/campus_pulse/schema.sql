@@ -21,3 +21,13 @@ CREATE TABLE IF NOT EXISTS events (
     created_at  TEXT DEFAULT CURRENT_TIMESTAMP,
     UNIQUE (user_id, message_id)
 );
+
+CREATE TABLE IF NOT EXISTS manual_events (
+    id         INTEGER PRIMARY KEY,
+    title      TEXT NOT NULL,
+    start_time TEXT,
+    end_time   TEXT,
+    venue      TEXT,
+    organizer  TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
