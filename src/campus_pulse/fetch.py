@@ -2,25 +2,35 @@
 import email
 import hashlib
 import imaplib
+import os
 import re
 import ssl
 from email import policy
 from email.utils import getaddresses
 from email.utils import parsedate_to_datetime
-from datetime import timezone
 from pathlib import Path
+from datetime import timezone
 
 
 from bs4 import BeautifulSoup
+from dotenv import load_dotenv
+
+REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+load_dotenv(REPO_ROOT / "private" / ".env")
 
 BLOCK_TAGS = ["p", "div", "br", "li", "tr", "h1", "h2", "h3", "h4", "h5", "h6", "table"]
 
-def connect(private_data):
+def connect(email_address=None, access_token=None):
     """Log in to the IITB IMAP server and return the connection."""
+    if email_address is None and access_token is None:
+        email_address = os.environ["IITB_EMAIL"]
+        access_token = os.environ["IITB_IMAP_ACCESS_TOKEN"]
+    elif not email_address or not access_token:
+        raise ValueError("Both email address and access token are required")
     context = ssl.create_default_context()
     context.set_ciphers("DEFAULT")      # IITB's server needs older ciphers
-    mail = imaplib.IMAP4_SSL(private_data["IITB_IMAP_SERVER"], 993, ssl_context=context)
-    mail.login(private_data["IITB_EMAIL"], private_data["IITB_IMAP_ACCESS_TOKEN"])
+    mail = imaplib.IMAP4_SSL(os.environ["IITB_IMAP_SERVER"], 993, ssl_context=context)
+    mail.login(email_address, access_token)
     return mail
 
 
@@ -121,7 +131,7 @@ def parse_email(uid: int, raw_bytes: bytes, folder: str) -> dict:
     }
 
 
-def fetch_new_emails(mail: imaplib.IMAP4_SSL, folder="INBOX", since_uid=0, limit=None):
+def fetch_new_emails(mail: imaplib.IMAP4_SSL, folder="INBOX", since_uid=0, limit=None, *, newest_first=False):
     """Return (uidvalidity, emails) for emails with UID greater than since_uid."""
     mail.select(folder, readonly=True)                  # readonly: never change your mailbox
     _, data = mail.response("UIDVALIDITY")
@@ -131,7 +141,7 @@ def fetch_new_emails(mail: imaplib.IMAP4_SSL, folder="INBOX", since_uid=0, limit
     _, data = mail.uid("search", None, f"UID {since_uid + 1}:*")
     uids = [int(u) for u in data[0].split()]
     uids = [u for u in uids if u > since_uid]           # IMAP quirk: "MaxUID:*" always returns the newest email
-    uids.sort()
+    uids.sort(reverse=newest_first)
 
     if limit:
         uids = uids[:limit]                            # oldest N only
@@ -147,19 +157,12 @@ def fetch_new_emails(mail: imaplib.IMAP4_SSL, folder="INBOX", since_uid=0, limit
     return uidvalidity, emails
 
 
-def fetch_emails(private_data, folder="INBOX", since_uid=0, limit=None):
-    mail = connect(private_data)
-    try:
-        return fetch_new_emails(mail, folder=folder, since_uid=since_uid, limit=limit)
-    finally:
-        mail.logout()
-
-
 if __name__ == "__main__":
-    from dotenv import dotenv_values
-
-    settings = dotenv_values(Path(__file__).resolve().parents[2] / "private" / ".env")
-    uidvalidity, emails = fetch_emails(settings, limit=10, since_uid=0)
+    mail = connect()
+    try:
+        uidvalidity, emails = fetch_new_emails(mail, limit=10, since_uid=0)
+    finally:
+        mail.logout()                                   # always log out, even on errors
 
     print(f"UIDVALIDITY: {uidvalidity}")
     for e in emails:

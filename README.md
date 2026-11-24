@@ -61,6 +61,15 @@ nvm use 22
 npm run dev
 ```
 
+To extract events from IITB email, configure the variables in `.env.example` in
+`private/.env`, then run from the repository root:
+
+```bash
+PYTHONPATH=src python -m campus_pulse.extract
+```
+
+The script stores results in `data/events.db`.
+
 ## Testing
 
 Add instructions for running the test suite.
