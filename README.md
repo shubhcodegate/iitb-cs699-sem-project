@@ -39,9 +39,19 @@ Semester-long software project for **CS699: Software Lab** at the **Indian Insti
 
 ## Setup
 
-Add instructions for setting up the development environment and installing dependencies.
+From the repository root, install dependencies once. If you use a Python virtual
+environment, activate it before installing or running the app.
+
+```bash
+python3 -m pip install -r backend/requirements.txt
+npm install
+npm --prefix frontend install
+```
 
 ## Usage
+
+Run `npm run dev` at the repository root to start FastAPI and Vite together.
+Open the local URL printed by Vite. Press Ctrl+C to stop both.
 
 To extract events from IITB email, configure the variables in `.env.example` in
 `private/.env`, then run from the repository root:
