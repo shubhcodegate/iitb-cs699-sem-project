@@ -64,6 +64,21 @@ PYTHONPATH=src python -m campus_pulse.extract
 
 The script stores results in `data/events.db`.
 
+To run backend:
+
+```sh
+cd backend
+PYTHONPATH=../src fastapi dev main.py
+```
+
+To run frontend:
+
+```sh
+cd frontend
+nvm use 22
+npm run dev
+```
+
 ## Testing
 
 Add instructions for running the test suite.
