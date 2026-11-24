@@ -1,5 +1,7 @@
-import { useActionState, useRef, useState } from 'react'
+import { useActionState, useEffect, useRef, useState } from 'react'
 import CampusMap from './components/CampusMap'
+import ManualEventForm from './components/ManualEventForm'
+import ManualEventList from './components/ManualEventList'
 import { events } from './data/events'
 import { venues } from './data/venues'
 import './App.css'
@@ -22,14 +24,27 @@ function formatDate(date) {
 
 const categories = [...new Set(events.map((event) => event.category))].sort()
 
+const viewText = {
+  dashboard: { label: 'Dashboard', title: 'Your campus, at a glance', description: 'Discover events and make a little more of your campus day.' },
+  map: { label: 'Map', title: 'Find your way around', description: 'Explore campus venues and locate your next event.' },
+  'add-event': { label: 'Add event', title: 'Add a campus event', description: 'Enter the event details and save them to the event database.' },
+}
+
+function viewFromHash() {
+  const view = window.location.hash.slice(1)
+  return view in viewText ? view : 'dashboard'
+}
+
 function App() {
-  const [activeView, setActiveView] = useState('dashboard')
+  const [activeView, setActiveView] = useState(viewFromHash)
   const contentRef = useRef(null)
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedVenue, setSelectedVenue] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
   // const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [credentials, setCredentials] = useState('')
+  const [manualEvents, setManualEvents] = useState([])
+  const [manualEventStatus, setManualEventStatus] = useState('')
   const [user, setUser] = useState(() => {
     try {
       return JSON.parse(sessionStorage.getItem('campusPulse.profile'))
@@ -45,10 +60,60 @@ function App() {
     return matchesCategory && searchTerms.every((term) => searchableText.includes(term))
   })
 
+  useEffect(() => {
+    const syncView = () => setActiveView(viewFromHash())
+    window.addEventListener('hashchange', syncView)
+    fetch('/api/manual-events')
+      .then((response) => (response.ok ? response.json() : []))
+      .then(setManualEvents)
+      .catch(() => {})
+    return () => window.removeEventListener('hashchange', syncView)
+  }, [])
+
   function changeView(view) {
+    window.location.hash = view
     setActiveView(view)
     contentRef.current?.focus()
     window.scrollTo({ top: 0, behavior: 'instant' })
+  }
+
+  async function submitManualEvent(event) {
+    event.preventDefault()
+    const form = event.currentTarget
+    const values = Object.fromEntries(new FormData(form))
+    values.venue = values.venue_choice === '__other__' ? values.custom_venue.trim() : values.venue_choice
+    delete values.venue_choice
+    delete values.custom_venue
+    setManualEventStatus('Saving event...')
+
+    try {
+      const response = await fetch('/api/manual-events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(values),
+      })
+      if (!response.ok) throw new Error('Could not save event. Check that the backend is running.')
+      const savedEvent = await response.json()
+      setManualEvents((currentEvents) => [savedEvent, ...currentEvents])
+      form.reset()
+      setManualEventStatus('Event saved.')
+      return true
+    } catch (error) {
+      setManualEventStatus(error.message)
+      return false
+    }
+  }
+
+  async function deleteManualEvent(manualEvent) {
+    if (!window.confirm(`Delete "${manualEvent.title}"?`)) return
+
+    try {
+      const response = await fetch(`/api/manual-events/${manualEvent.id}`, { method: 'DELETE' })
+      if (!response.ok && response.status !== 404) throw new Error(`HTTP ${response.status}`)
+      setManualEvents((currentEvents) => currentEvents.filter((event) => event.id !== manualEvent.id))
+    } catch {
+      window.alert('Could not delete event. Check that the backend is running.')
+    }
   }
 
   function showVenue(venue) {
@@ -100,11 +165,12 @@ function App() {
         <nav className="view-navigation" aria-label="Main navigation">
           <button type="button" aria-current={activeView === 'dashboard' ? 'page' : undefined} onClick={() => changeView('dashboard')}><span aria-hidden="true">▦</span> Dashboard</button>
           <button type="button" aria-current={activeView === 'map' ? 'page' : undefined} onClick={() => changeView('map')}><span aria-hidden="true">⌖</span> Campus map</button>
+          <button type="button" aria-current={activeView === 'add-event' ? 'page' : undefined} onClick={() => changeView('add-event')}><span aria-hidden="true">+</span> Add event</button>
         </nav>
         <div className="sidebar-note">A little closer to campus.<span>Discover events, find your way,<br />and get involved.</span></div>
       </aside>
       <main className="campus-page" ref={contentRef} tabIndex={-1}>
-      <div className="workspace-bar"><span>Campus / {activeView === 'dashboard' ? 'Dashboard' : 'Map'}</span>
+      <div className="workspace-bar"><span>Campus / {viewText[activeView].label}</span>
         {user ? (
           <div className="account-control">
             <button type="button" className="account-trigger" popoverTarget="account-actions" aria-label="Account options">
@@ -121,8 +187,8 @@ function App() {
         )}
       </div>
       <header className="page-header">
-        <h1>{activeView === 'dashboard' ? 'Your campus, at a glance' : 'Find your way around'}</h1>
-        <p>{activeView === 'dashboard' ? 'Discover events and make a little more of your campus day.' : 'Explore campus venues and locate your next event.'}</p>
+        <h1>{viewText[activeView].title}</h1>
+        <p>{viewText[activeView].description}</p>
       </header>
 
       {activeView === 'map' ? (
@@ -139,6 +205,8 @@ function App() {
             {selectedVenue && <p className="selected-venue" role="status">Viewing {selectedVenue.name}</p>}
           </aside>
         </div>
+      ) : activeView === 'add-event' ? (
+        <ManualEventForm onSubmit={submitManualEvent} status={manualEventStatus} />
       ) : (
       <>
       <div className="dashboard-summary" aria-label="Event overview">
@@ -238,6 +306,7 @@ function App() {
             </article>
           ))}
         </div>
+        <ManualEventList events={manualEvents} venues={venues} onDelete={deleteManualEvent} />
       </section>
       </>
       )}
