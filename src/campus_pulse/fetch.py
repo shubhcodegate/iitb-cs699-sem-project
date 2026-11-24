@@ -2,30 +2,25 @@
 import email
 import hashlib
 import imaplib
-import os
 import re
 import ssl
 from email import policy
 from email.utils import getaddresses
 from email.utils import parsedate_to_datetime
-from pathlib import Path
 from datetime import timezone
+from pathlib import Path
 
 
 from bs4 import BeautifulSoup
-from dotenv import load_dotenv
-
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-load_dotenv(REPO_ROOT / "private" / ".env")
 
 BLOCK_TAGS = ["p", "div", "br", "li", "tr", "h1", "h2", "h3", "h4", "h5", "h6", "table"]
 
-def connect():
+def connect(private_data):
     """Log in to the IITB IMAP server and return the connection."""
     context = ssl.create_default_context()
     context.set_ciphers("DEFAULT")      # IITB's server needs older ciphers
-    mail = imaplib.IMAP4_SSL(os.environ["IITB_IMAP_SERVER"], 993, ssl_context=context)
-    mail.login(os.environ["IITB_EMAIL"], os.environ["IITB_IMAP_ACCESS_TOKEN"])
+    mail = imaplib.IMAP4_SSL(private_data["IITB_IMAP_SERVER"], 993, ssl_context=context)
+    mail.login(private_data["IITB_EMAIL"], private_data["IITB_IMAP_ACCESS_TOKEN"])
     return mail
 
 
@@ -152,12 +147,19 @@ def fetch_new_emails(mail: imaplib.IMAP4_SSL, folder="INBOX", since_uid=0, limit
     return uidvalidity, emails
 
 
-if __name__ == "__main__":
-    mail = connect()
+def fetch_emails(private_data, folder="INBOX", since_uid=0, limit=None):
+    mail = connect(private_data)
     try:
-        uidvalidity, emails = fetch_new_emails(mail, limit=10, since_uid=0)
+        return fetch_new_emails(mail, folder=folder, since_uid=since_uid, limit=limit)
     finally:
-        mail.logout()                                   # always log out, even on errors
+        mail.logout()
+
+
+if __name__ == "__main__":
+    from dotenv import dotenv_values
+
+    settings = dotenv_values(Path(__file__).resolve().parents[2] / "private" / ".env")
+    uidvalidity, emails = fetch_emails(settings, limit=10, since_uid=0)
 
     print(f"UIDVALIDITY: {uidvalidity}")
     for e in emails:
