@@ -10,3 +10,4 @@ __pycache__/
 backend/*.db
 backend/*.db-*
 data/*.db
+/node_modules/
