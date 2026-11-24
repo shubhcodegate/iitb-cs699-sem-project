@@ -1,3 +1,4 @@
+from contextlib import contextmanager
 import sqlite3
 from pathlib import Path
 
@@ -14,9 +15,23 @@ def connect():
     return conn
 
 
-def init_db():
-    DB_PATH.parent.mkdir(exist_ok=True)
-    with connect() as conn:
+@contextmanager
+def connection():
+    conn = connect()
+    try:
+        with conn:
+            yield conn
+    finally:
+        conn.close()
+
+
+def init_db(data_folder=None):
+    global DB_PATH
+    if data_folder is not None:
+        DB_PATH = Path(data_folder) / "campus_pulse.db"
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+    with connection() as conn:
         conn.executescript(SCHEMA_PATH.read_text())
     print(f"Database ready at {DB_PATH}")
 

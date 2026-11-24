@@ -1,7 +1,9 @@
-from campus_pulse.fetch import connect, fetch_new_emails
-
 import os
+import sys
 from pathlib import Path
+
+project_root = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(project_root / "src"))
 
 import psycopg
 from dotenv import load_dotenv
@@ -16,14 +18,25 @@ from google.auth.transport.requests import Request as GoogleRequest
 from google.oauth2 import id_token
 from pydantic import EmailStr, SecretStr
 
+import campus_pulse
 from campus_pulse.extract import extract_event
+from campus_pulse.fetch import connect, fetch_new_emails
 
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-project_root = Path(__file__).resolve().parents[1]
 load_dotenv(project_root / "private" / ".env")
-database_url = os.environ["DATABASE_URL"]
+# Only the Postgres-backed endpoints (users, mailbox, upcoming events) need this;
+# manual events use the local SQLite db, so they work without it.
+database_url = os.environ.get("DATABASE_URL")
+
+
+def postgres_connection():
+    if not database_url:
+        raise HTTPException(status_code=503, detail="DATABASE_URL is not configured")
+    return psycopg.connect(database_url, sslmode="require", connect_timeout=5)
+
+campus_pulse.init_db(os.environ.get("DATA_DIR", project_root / "data"))
 
 mailbox_cipher = Fernet(os.environ["MAILBOX_ENCRYPTION_KEY"].encode())
 google_client_id = os.environ["VITE_GOOGLE_CLIENT_ID"]
@@ -34,9 +47,15 @@ class UserProfile(BaseModel):
     google_sub: str
     display_name: str
 
+class ManualEvent(BaseModel):
+    title: str
+    start_time: str | None = None
+    end_time: str | None = None
+    venue: str | None = None
+    organizer: str | None = None
 
 def save_user(google_sub: str, display_name: str): 
-    with psycopg.connect(database_url, sslmode="require", connect_timeout=5) as db: 
+    with postgres_connection() as db: 
         row = db.execute(
             """
             INSERT INTO private.app_users (google_sub, display_name)
@@ -56,7 +75,7 @@ def save_user(google_sub: str, display_name: str):
     }
 
 def load_mailbox_credentials(google_sub: str) -> tuple[str, str] | None:
-    with psycopg.connect(database_url, sslmode="require", connect_timeout=5) as db:
+    with postgres_connection() as db:
         row = db.execute(
             """
             SELECT iitb_email, iitb_token_ciphertext
@@ -172,7 +191,7 @@ def health_check():
 @app.get("/health/db")
 def database_health():
     try:
-        with psycopg.connect(database_url, sslmode="require", connect_timeout=5) as db:
+        with postgres_connection() as db:
             db.execute("SELECT 1").fetchone()
     except psycopg.OperationalError:
         raise HTTPException(status_code=503, detail="Database connection failed")
@@ -183,6 +202,21 @@ def database_health():
 def save_profile(profile: UserProfile):
     return save_user(profile.google_sub, profile.display_name)
 
+@app.get("/api/manual-events")
+def list_manual_events():
+    return campus_pulse.list_manual_events()
+
+@app.post("/api/manual-events")
+def add_manual_event(event: ManualEvent):
+    try:
+        return campus_pulse.add_manual_event(**event.model_dump())
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error))
+
+@app.delete("/api/manual-events/{event_id}", status_code=204)
+def delete_manual_event(event_id: int):
+    if not campus_pulse.delete_manual_event(event_id):
+        raise HTTPException(status_code=404, detail="Event not found")
 
 class MailboxSetup(BaseModel): 
     google_credential: SecretStr
@@ -206,7 +240,7 @@ def save_mailbox(form: MailboxSetup):
 
     encrypted_token = mailbox_cipher.encrypt(token.encode())
 
-    with psycopg.connect(database_url, sslmode="require", connect_timeout=5) as db:
+    with postgres_connection() as db:
         row = db.execute(
             """
             UPDATE private.app_users

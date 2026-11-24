@@ -53,6 +53,8 @@ npm --prefix frontend install
 Run `npm run dev` at the repository root to start FastAPI and Vite together.
 Open the local URL printed by Vite. Press Ctrl+C to stop both.
 
+The frontend needs Node 20.19+ or 22.12+ (for example, run `nvm use 22` first).
+
 To extract events from IITB email, configure the variables in `.env.example` in
 `private/.env`, then run from the repository root:
 
@@ -61,6 +63,21 @@ PYTHONPATH=src python -m campus_pulse.extract
 ```
 
 The script stores results in `data/events.db`.
+
+To run backend:
+
+```sh
+cd backend
+PYTHONPATH=../src fastapi dev main.py
+```
+
+To run frontend:
+
+```sh
+cd frontend
+nvm use 22
+npm run dev
+```
 
 ## Testing
 
