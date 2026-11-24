@@ -5,6 +5,7 @@ private
 .env
 
 backend/.venv/
+.venv/
 __pycache__/
 *.pyc
 backend/*.db
